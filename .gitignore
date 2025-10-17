@@ -1,0 +1,8 @@
+.vscode/
+bin/
+temp/
+powershell-modules/publish/
+*.exe*
+*.crt
+*.key
+/notes.md
