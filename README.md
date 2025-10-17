@@ -2,6 +2,12 @@
 
 INCOMPLETE: Work in progress
 
+| Feature                 | State              |
+|-------------------------|--------------------|
+| Windows REST Service    | :white_check_mark: |
+| Kubernetes CSI Workload | :x:                |
+| Helm Chart              | :x:                |
+
 This provides a CSI for mounting Hyper-V virtual hard disks as persistent volumes for Kubernetes clusters running on a single Hyper-V server.
 
 It comprises of the following components
