@@ -1,0 +1,297 @@
+definitions:
+  models.GetVHDResponse:
+    properties:
+      DiskIdentifier:
+        description: UUID identifier of the disk
+        type: string
+      Host:
+        description: UUID of the host to which the disk is attached, if it is attached.
+        type: string
+      Name:
+        description: Name of the disk
+        type: string
+      Path:
+        description: Path to the disk file
+        type: string
+      Size:
+        description: Size in bytes of the disk
+        type: integer
+    type: object
+  rest.CreateVolumeResponse:
+    properties:
+      id:
+        description: The GUID ID assigned to the volume by Hyper-V
+        type: string
+      size:
+        description: |-
+          Actual size of the created volume.
+          If caller requests less than the minimum VHD size,
+          then this will be the minimum VHD size.
+        type: integer
+    type: object
+  rest.Error:
+    properties:
+      code:
+        description: GRPC error code
+        type: integer
+      message:
+        description: Error message
+        type: string
+    type: object
+  rest.GetCapacityResponse:
+    properties:
+      availableCapacity:
+        description: |-
+          AvailableCapacity is the available space in bytes
+          on the disk where the PV Store resides for creating
+          new persistent volumes.
+        type: integer
+      minimumVolumeSize:
+        description: |-
+          MinimumVolumeSize is the minimum size of a volume that can be provisioned.
+          Requests for smaller volumes will result in a volume of this size being provisioned.
+        type: integer
+    type: object
+  rest.ListVolumesResponse:
+    properties:
+      next_token:
+        description: If there are more entries in the list, this token can be used
+          to fetch the next set of entries.
+        type: string
+      volumes:
+        description: List of volumes found in the PV Store
+        items:
+          $ref: '#/definitions/models.GetVHDResponse'
+        type: array
+    type: object
+info:
+  contact: {}
+paths:
+  /attachment/{nodeid}/volume/{volid}:
+    delete:
+      consumes:
+      - application/json
+      description: Detaches a volume from a node
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      - description: Node ID
+        in: path
+        name: nodeid
+        required: true
+        type: string
+      - description: Volume ID
+        in: path
+        name: volid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Unpublish Volume
+      tags:
+      - Controller
+    post:
+      consumes:
+      - application/json
+      description: Attaches a volume to a node
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      - description: Node ID
+        in: path
+        name: nodeid
+        required: true
+        type: string
+      - description: Volume ID
+        in: path
+        name: volid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Publish Volume
+      tags:
+      - Controller
+  /capacity:
+    get:
+      consumes:
+      - application/json
+      description: Returns available capacity for new volumes, accounting for dynamic
+        disk sizing
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.GetCapacityResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Get storage capacity
+      tags:
+      - Controller
+  /volume/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a VHD
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      - description: Volume ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid arguments
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Delete a VHD
+      tags:
+      - Controller
+  /volume/{name}:
+    post:
+      consumes:
+      - application/json
+      description: Create a new VHD
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      - description: Volume size
+        in: query
+        name: size
+        required: true
+        type: integer
+      - description: Volume name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rest.CreateVolumeResponse'
+        "400":
+          description: Invalid arguments
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Create a new VHD
+      tags:
+      - Controller
+  /volumes:
+    get:
+      consumes:
+      - application/json
+      description: List volumes
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      - description: Maximum entires to return
+        in: query
+        name: maxentries
+        type: integer
+      - description: Next token for pagination
+        in: query
+        name: nexttoken
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.ListVolumesResponse'
+        "400":
+          description: Invalid arguments
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: List volumes
+      tags:
+      - Controller
+swagger: "2.0"

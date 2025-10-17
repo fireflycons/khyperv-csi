@@ -1,0 +1,428 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/attachment/{nodeid}/volume/{volid}": {
+            "post": {
+                "description": "Attaches a volume to a node",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Controller"
+                ],
+                "summary": "Publish Volume",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "nodeid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Volume ID",
+                        "name": "volid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Detaches a volume from a node",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Controller"
+                ],
+                "summary": "Unpublish Volume",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "nodeid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Volume ID",
+                        "name": "volid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity": {
+            "get": {
+                "description": "Returns available capacity for new volumes, accounting for dynamic disk sizing",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Controller"
+                ],
+                "summary": "Get storage capacity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.GetCapacityResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/volume/{id}": {
+            "delete": {
+                "description": "Delete a VHD",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Controller"
+                ],
+                "summary": "Delete a VHD",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Volume ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid arguments",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/volume/{name}": {
+            "post": {
+                "description": "Create a new VHD",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Controller"
+                ],
+                "summary": "Create a new VHD",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Volume size",
+                        "name": "size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Volume name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/rest.CreateVolumeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid arguments",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/volumes": {
+            "get": {
+                "description": "List volumes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Controller"
+                ],
+                "summary": "List volumes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum entires to return",
+                        "name": "maxentries",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Next token for pagination",
+                        "name": "nexttoken",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ListVolumesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid arguments",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.GetVHDResponse": {
+            "type": "object",
+            "properties": {
+                "DiskIdentifier": {
+                    "description": "UUID identifier of the disk",
+                    "type": "string"
+                },
+                "Host": {
+                    "description": "UUID of the host to which the disk is attached, if it is attached.",
+                    "type": "string"
+                },
+                "Name": {
+                    "description": "Name of the disk",
+                    "type": "string"
+                },
+                "Path": {
+                    "description": "Path to the disk file",
+                    "type": "string"
+                },
+                "Size": {
+                    "description": "Size in bytes of the disk",
+                    "type": "integer"
+                }
+            }
+        },
+        "rest.CreateVolumeResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "The GUID ID assigned to the volume by Hyper-V",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "Actual size of the created volume.\nIf caller requests less than the minimum VHD size,\nthen this will be the minimum VHD size.",
+                    "type": "integer"
+                }
+            }
+        },
+        "rest.Error": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "GRPC error code",
+                    "type": "integer"
+                },
+                "message": {
+                    "description": "Error message",
+                    "type": "string"
+                }
+            }
+        },
+        "rest.GetCapacityResponse": {
+            "type": "object",
+            "properties": {
+                "availableCapacity": {
+                    "description": "AvailableCapacity is the available space in bytes\non the disk where the PV Store resides for creating\nnew persistent volumes.",
+                    "type": "integer"
+                },
+                "minimumVolumeSize": {
+                    "description": "MinimumVolumeSize is the minimum size of a volume that can be provisioned.\nRequests for smaller volumes will result in a volume of this size being provisioned.",
+                    "type": "integer"
+                }
+            }
+        },
+        "rest.ListVolumesResponse": {
+            "type": "object",
+            "properties": {
+                "next_token": {
+                    "description": "If there are more entries in the list, this token can be used to fetch the next set of entries.",
+                    "type": "string"
+                },
+                "volumes": {
+                    "description": "List of volumes found in the PV Store",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.GetVHDResponse"
+                    }
+                }
+            }
+        }
+    }
+}
