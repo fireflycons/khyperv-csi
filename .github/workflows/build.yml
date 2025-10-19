@@ -17,7 +17,9 @@ jobs:
         run: go mod download
 
       - name: Build
-        run: make windows-service
+        run: |
+          make -v
+          make windows-service
         shell: cmd
 
       - name: golangci-lint
