@@ -5,7 +5,7 @@ ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
 	MOCKERY = mockery.exe
 	SWAGDIR = internal/windows
 	SWAGGERFILES = $(SWAGDIR)/controller/routes.go internal/models/rest/*.go internal/models/get-vhd.go
-	POWERSHELL = $(shell where.exe powershell.exe)
+	POWERSHELL = C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
 	SOURCE_FILES_RAW = $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -File zbuild/get-windowsdeps.ps1)
 	SOURCE_FILES = $(shell echo | set /p="$(SOURCE_FILES_RAW)")
 	LOGGING_FILES_RAW = $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted  -NoProfile -File zbuild/get-loggingdeps.ps1)
