@@ -3,7 +3,9 @@
 package vhd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -259,4 +261,10 @@ func (s *VHDTestSuite) assertDiskNotExists(path string) {
 
 	_, err := os.Stat(path)
 	s.Require().Error(err, "Expected not to find %s", path)
+}
+
+func (s *VHDTestSuite) dumpJson(v any, out io.Writer) {
+	enc := json.NewEncoder(out)
+	enc.SetIndent("", "    ")
+	s.Require().NoError(enc.Encode(v))
 }
