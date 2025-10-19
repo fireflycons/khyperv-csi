@@ -92,7 +92,7 @@ ifeq ($(detected_OS),Windows)
 PS_FILES := $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -Command 'Get-ChildItem -Recurse -Filter *.ps* -Path powershell-modules | ForEach-Object { Write-Host -NoNewLine $$_.FullName ""}')
 
 cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg: $(PS_FILES)
-	@powershell -File powershell-modules/build-module.ps1 -Version $(VERSION) -Target "$@"
+	@$(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -File powershell-modules/build-module.ps1 -Version $(VERSION) -Target "$@"
 
 .PHONY: powershell
 powershell: cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg ## (Windows) Build khyperv-csi PowerShell Module

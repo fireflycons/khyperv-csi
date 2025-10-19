@@ -1,7 +1,7 @@
 name: build
 on: [push, pull_request]
 jobs:
-  winddows-service:
+  windows-service:
     runs-on: windows-latest
     env:
       GO111MODULE: "on"
@@ -24,6 +24,10 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.4.0
+
+      - name: List services
+        run: Get-Service | Where-Object { $_.Status -eq "Stopped" }
+        shell: powershell
 
       - name: Test
         run: make test-service
