@@ -102,11 +102,11 @@ endif
 # ------------ WINDOWS SERVICE -------------
 ifeq ($(detected_OS),Windows)
 
-khypervprovider.exe: swagger $(SOURCE_FILES_) $(LOGGING_FILES)
+khypervprovider.exe: swagger $(SOURCE_FILES) $(LOGGING_FILES)
 	go build -ldflags "-s -w" ./cmd/khypervprovider
 
 .PHONY: windows-service
-windows-service: khypervprovider.exe ## (Windows) Build REST service for Hyper-V
+windows-service: powershell khypervprovider.exe ## (Windows) Build REST service for Hyper-V
 
 endif
 
@@ -125,15 +125,18 @@ test-service: powershell install-module ## (Windows) Test Windows Service compon
 
 endif
 
-# temp/golangci-lint.ok: .golangci.yml $(GOFILES)
-# 	golangci-lint run --timeout 2m30s ./...
-# 	@mkdir -p temp
-# 	@touch temp/golangci-lint.ok
-# $(TARGET): $(GOFILES)
-# 	CGO_ENABLED=0 go build -o $(TARGET) -ldflags "$(LDFLAGS)" .
+temp/golangci-lint.ok: powershell .golangci.yml $(SOURCE_FILES) $(LOGGING_FILES)
+	golangci-lint run --timeout 2m30s ./...
+ifeq ($(detected_OS),Windows)
+	@cmd /c "if not exist temp mkdir temp"
+	@cmd /c "type nul > temp\golangci-lint.ok"
+else
+	@mkdir -p temp
+	@touch temp/golangci-lint.ok
+endif
 
-# .PHONY: lint
-# lint: temp/golangci-lint.ok	## Run linter over source code
+.PHONY: lint
+lint: temp/golangci-lint.ok	## Run linter over source code
 
 meh:
 	@$(POWERSHELL) -NoProfile -NonInteractive -Command "Get-Module -ListAvailable ; $$Host ; dir env: | select-object Key, Value | ft"
