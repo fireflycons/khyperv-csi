@@ -23,8 +23,8 @@ func TestIsServiceRunning(t *testing.T) {
 		},
 		{
 			// It is highly unlikely anyone would be running this
-			name:            "Fax service is not running",
-			serviceName:     "fax",
+			name:            "BITS service is not running",
+			serviceName:     "BITS",
 			shouldBeRunning: false,
 		},
 		{
