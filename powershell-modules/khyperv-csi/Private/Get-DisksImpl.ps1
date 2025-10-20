@@ -40,14 +40,6 @@ function Get-DisksImpl{
         }
     }
 
-    function Get-DiskName {
-        param (
-            [string]$Path
-        )
-
-        [IO.Path]::GetFileNameWithoutExtension($Path) -split ';' | Select-Object -First 1
-    }
-
     $unattachedDisks = if ($storeDisks -and -not $attachedDisks) {
         $storeDisks
     } elseif ($attachedDisks -and $storeDisks ) {
