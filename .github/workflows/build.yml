@@ -2,7 +2,7 @@ name: build
 on: [push, pull_request]
 jobs:
   windows-service:
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       GO111MODULE: "on"
     steps:
