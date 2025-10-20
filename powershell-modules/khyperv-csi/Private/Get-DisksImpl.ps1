@@ -20,11 +20,10 @@ function Get-DisksImpl{
         [string]$NextToken = ""
 	)
 
-    # Sometimes we get a windows short path here with a tilde (~) in the name.
-    # Resolve it to the full path to avoid issues later on. 
-    $PVStore = (Get-Item -Path $PVStore).FullName
-
     try {
+        # Sometimes we get a windows short path here with a tilde (~) in the name.
+        # Resolve it to the full path to avoid issues later on.
+        $PVStore = (Get-Item -Path $PVStore).FullName
     	$storeDisks = Get-ChildItem -Path $PVStore -Filter "*.vhd*" | Get-VHD
     }
     catch {

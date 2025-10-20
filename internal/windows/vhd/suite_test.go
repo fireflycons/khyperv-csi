@@ -81,7 +81,7 @@ func (s *VHDTestSuite) SetupSuite() {
 		},
 	}
 
-	switchableLog.On()
+	//switchableLog.On()
 
 	runner, err := powershell.NewRunner(
 		powershell.WithModules(constants.PowerShellModule),
@@ -98,7 +98,10 @@ func (s *VHDTestSuite) SetupSuite() {
 	s.runner = runner
 	s.logger = *switchableLog
 
-	s.pvStore = filepath.Join(os.TempDir(), "khypervcsi-test", "disks")
+	st, err := win32.GetLongPathName(filepath.Join(os.TempDir(), "khypervcsi-test", "disks"))
+	s.Require().NoError(err, "Cannot resolve PV store path")
+
+	s.pvStore = st
 
 	fmt.Printf("\n\nPVStore: %s\n\n", s.pvStore)
 
