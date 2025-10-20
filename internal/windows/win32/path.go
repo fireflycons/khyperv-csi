@@ -8,7 +8,7 @@ func GetLongPathName(path string) (string, error) {
 		return "", err
 	}
 	buf := make([]uint16, windows.MAX_PATH)
-	n, err := windows.GetLongPathName(p, &buf[0], uint32(len(buf)))
+	n, err := windows.GetLongPathName(p, &buf[0], windows.MAX_PATH)
 	if err != nil {
 		return "", err
 	}

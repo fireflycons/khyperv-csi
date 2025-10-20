@@ -81,8 +81,6 @@ func (s *VHDTestSuite) SetupSuite() {
 		},
 	}
 
-	//switchableLog.On()
-
 	runner, err := powershell.NewRunner(
 		powershell.WithModules(constants.PowerShellModule),
 		powershell.WithLogger(switchableLog),

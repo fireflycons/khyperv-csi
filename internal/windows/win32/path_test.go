@@ -16,7 +16,7 @@ func getShortPath(path string) (string, error) {
 	}
 
 	buf := make([]uint16, syscall.MAX_PATH)
-	n, err := syscall.GetShortPathName(pathUTF16, &buf[0], uint32(len(buf)))
+	n, err := syscall.GetShortPathName(pathUTF16, &buf[0], syscall.MAX_PATH)
 	if n == 0 {
 		if err != nil {
 			return "", err
