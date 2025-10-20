@@ -42,10 +42,7 @@ type RunnerOptionFunc func(*runnerOptions)
 // NewRunner creates a concrete implementation of the Runner interface.
 func NewRunner(opts ...RunnerOptionFunc) (*concreteRunner, error) {
 
-	var (
-		s psg.Shell
-		l psg.Logger
-	)
+	var s psg.Shell
 
 	ro := runnerOptions{}
 	for _, opt := range opts {
@@ -76,7 +73,7 @@ func NewRunner(opts ...RunnerOptionFunc) (*concreteRunner, error) {
 
 	return &concreteRunner{
 		shell:  s,
-		logger: l,
+		logger: ro.logger,
 	}, nil
 }
 
