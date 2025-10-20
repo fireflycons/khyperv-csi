@@ -98,9 +98,11 @@ func (s *VHDTestSuite) SetupSuite() {
 
 	fp := filepath.Join(os.TempDir(), "khypervcsi-test", "disks")
 
+	//nolint:govet // intentional redeclaration of err
 	if _, err := os.Stat(fp); os.IsNotExist(err) {
+		//
 		err = os.MkdirAll(fp, 0755)
-		s.NoError(err)
+		s.Require().NoError(err)
 	}
 
 	st, err := win32.GetLongPathName(fp)
