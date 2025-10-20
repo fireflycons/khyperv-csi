@@ -25,7 +25,8 @@ type Runner interface {
 }
 
 type concreteRunner struct {
-	shell psg.Shell
+	shell  psg.Shell
+	logger psg.Logger
 }
 
 var _ Runner = (*concreteRunner)(nil)
@@ -41,7 +42,10 @@ type RunnerOptionFunc func(*runnerOptions)
 // NewRunner creates a concrete implementation of the Runner interface.
 func NewRunner(opts ...RunnerOptionFunc) (*concreteRunner, error) {
 
-	var s psg.Shell
+	var (
+		s psg.Shell
+		l psg.Logger
+	)
 
 	ro := runnerOptions{}
 	for _, opt := range opts {
@@ -71,7 +75,8 @@ func NewRunner(opts ...RunnerOptionFunc) (*concreteRunner, error) {
 	}
 
 	return &concreteRunner{
-		shell: s,
+		shell:  s,
+		logger: l,
 	}, nil
 }
 
@@ -121,7 +126,13 @@ func (r *concreteRunner) RunWithResult(cmdlets ...Cmdlet) (string, error) {
 		}
 	}
 
-	return strings.TrimSpace(stdout), err
+	output := strings.TrimSpace(stdout)
+
+	if r.logger != nil && output != "" {
+		r.logger.Infof("PowerShell Output: %s", output)
+	}
+
+	return output, err
 }
 
 // Exit releases any resources associated with the runner
