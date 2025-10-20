@@ -29,7 +29,9 @@ func getShortPath(path string) (string, error) {
 
 func TestGetLongPath(t *testing.T) {
 	// Create a temp file with a long-ish name to ensure it can have a short alias.
-	tmpDir := os.TempDir()
+	tmpDir, err := GetLongPathName(os.TempDir())
+	require.NoError(t, err, "Failed to get long path of tmpdir")
+
 	tmpFile, err := os.CreateTemp(tmpDir, "longfilename_for_testing_purpose_1234567890_*.txt")
 	require.NoError(t, err, "Failed to create temp file")
 
