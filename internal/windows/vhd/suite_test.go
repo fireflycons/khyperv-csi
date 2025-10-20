@@ -100,6 +100,8 @@ func (s *VHDTestSuite) SetupSuite() {
 
 	s.pvStore = filepath.Join(os.TempDir(), "khypervcsi-test", "disks")
 
+	fmt.Printf("\n\nPVStore: %s\n\n", s.pvStore)
+
 	if _, err := os.Stat(s.pvStore); os.IsNotExist(err) {
 		err = os.MkdirAll(s.pvStore, 0755)
 		s.NoError(err)
