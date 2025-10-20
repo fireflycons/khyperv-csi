@@ -3,7 +3,6 @@
 package vhd
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/fireflycons/hypervcsi/internal/models"
@@ -41,7 +40,6 @@ func (s *VHDTestSuite) TestAttachDetach() {
 
 		s.Assert().NoError(err2)
 		s.Assert().NotEmpty(disks2.VHDs)
-		fmt.Printf("Attachment: diskid: %s, nodeId: %s, path: %s\n", disks2.VHDs[0].DiskIdentifier, *disks2.VHDs[0].Host, disks2.VHDs[0].Path)
 
 		disks, err := List(s.runner, s.pvStore, 0, "")
 		s.Require().NoError(err)

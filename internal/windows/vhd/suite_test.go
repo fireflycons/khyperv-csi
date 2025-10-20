@@ -96,17 +96,18 @@ func (s *VHDTestSuite) SetupSuite() {
 	s.runner = runner
 	s.logger = *switchableLog
 
-	st, err := win32.GetLongPathName(filepath.Join(os.TempDir(), "khypervcsi-test", "disks"))
+	fp := filepath.Join(os.TempDir(), "khypervcsi-test", "disks")
+
+	if _, err := os.Stat(fp); os.IsNotExist(err) {
+		err = os.MkdirAll(fp, 0755)
+		s.NoError(err)
+	}
+
+	st, err := win32.GetLongPathName(fp)
 	s.Require().NoError(err, "Cannot resolve PV store path")
 
 	s.pvStore = st
-
 	fmt.Printf("\n\nPVStore: %s\n\n", s.pvStore)
-
-	if _, err := os.Stat(s.pvStore); os.IsNotExist(err) {
-		err = os.MkdirAll(s.pvStore, 0755)
-		s.NoError(err)
-	}
 
 	s.vmStore = filepath.Join(os.TempDir(), "khypervcsi-test", "vm")
 

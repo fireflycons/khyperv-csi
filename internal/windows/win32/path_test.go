@@ -1,6 +1,7 @@
 package win32
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -50,5 +51,7 @@ func TestGetLongPath(t *testing.T) {
 
 	resolved, err := GetLongPathName(shortPath)
 	require.NoError(t, err, "getLongPath() returned error")
+
+	fmt.Printf("short: %s\nlong: %s\n", shortPath, resolved)
 	require.Equal(t, longPath, resolved, "Expected long path:\n%s\nGot:\n%s", longPath, resolved)
 }
