@@ -21,6 +21,9 @@ function Get-DisksImpl{
 	)
 
     try {
+        # Sometimes we get a windows short path here with a tilde (~) in the name.
+        # Resolve it to the full path to avoid issues later on.
+        $PVStore = (Get-Item -Path $PVStore).FullName
     	$storeDisks = Get-ChildItem -Path $PVStore -Filter "*.vhd*" | Get-VHD
     }
     catch {
@@ -38,14 +41,6 @@ function Get-DisksImpl{
                     $PVStore -eq (Split-Path -Path $_.Path -Parent)
                 }
         }
-    }
-
-    function Get-DiskName {
-        param (
-            [string]$Path
-        )
-
-        [IO.Path]::GetFileNameWithoutExtension($Path) -split ';' | Select-Object -First 1
     }
 
     $unattachedDisks = if ($storeDisks -and -not $attachedDisks) {

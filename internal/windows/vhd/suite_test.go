@@ -3,7 +3,9 @@
 package vhd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -79,8 +81,6 @@ func (s *VHDTestSuite) SetupSuite() {
 		},
 	}
 
-	switchableLog.On()
-
 	runner, err := powershell.NewRunner(
 		powershell.WithModules(constants.PowerShellModule),
 		powershell.WithLogger(switchableLog),
@@ -96,12 +96,20 @@ func (s *VHDTestSuite) SetupSuite() {
 	s.runner = runner
 	s.logger = *switchableLog
 
-	s.pvStore = filepath.Join(os.TempDir(), "khypervcsi-test", "disks")
+	fp := filepath.Join(os.TempDir(), "khypervcsi-test", "disks")
 
-	if _, err := os.Stat(s.pvStore); os.IsNotExist(err) {
-		err = os.MkdirAll(s.pvStore, 0755)
-		s.NoError(err)
+	//nolint:govet // intentional redeclaration of err
+	if _, err := os.Stat(fp); os.IsNotExist(err) {
+		//
+		err = os.MkdirAll(fp, 0755)
+		s.Require().NoError(err)
 	}
+
+	st, err := win32.GetLongPathName(fp)
+	s.Require().NoError(err, "Cannot resolve PV store path")
+
+	s.pvStore = st
+	fmt.Printf("\n\nPVStore: %s\n\n", s.pvStore)
 
 	s.vmStore = filepath.Join(os.TempDir(), "khypervcsi-test", "vm")
 
@@ -259,4 +267,10 @@ func (s *VHDTestSuite) assertDiskNotExists(path string) {
 
 	_, err := os.Stat(path)
 	s.Require().Error(err, "Expected not to find %s", path)
+}
+
+func (s *VHDTestSuite) dumpJson(v any, out io.Writer) {
+	enc := json.NewEncoder(out)
+	enc.SetIndent("", "    ")
+	s.Require().NoError(enc.Encode(v))
 }

@@ -10,7 +10,7 @@ function New-PVStore {
 
     if (-not (Test-Path -PathType Container -Path $pvstore)) {
         try {
-            New-Item -ItemType Directory -Path $pvstore
+            New-Item -ItemType Directory -Path $pvstore | Out-Null
         } catch {
             throw "INTERNAL : " + $_.Exception.Message
         }

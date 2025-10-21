@@ -25,6 +25,22 @@ func (s *VHDTestSuite) TestAttachDetach() {
 		attached, err := Attach(s.runner, s.pvStore, disk.DiskIdentifier, s.vm.ID)
 		s.Require().NoError(err)
 
+		disks2 := &models.ListVHDResponse{}
+
+		_, err2 := executeWithReturn(
+			s.runner,
+			disks2,
+			powershell.NewCmdlet(
+				"Get-PVAttachments",
+				map[string]any{
+					"VMId": s.vm.ID,
+				},
+			),
+		)
+
+		s.Assert().NoError(err2)
+		s.Assert().NotEmpty(disks2.VHDs)
+
 		disks, err := List(s.runner, s.pvStore, 0, "")
 		s.Require().NoError(err)
 

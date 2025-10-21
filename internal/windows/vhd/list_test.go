@@ -3,6 +3,7 @@
 package vhd
 
 import (
+	"os"
 	"slices"
 	"strings"
 
@@ -42,6 +43,7 @@ func (s *VHDTestSuite) TestListWithAttachedVolume() {
 	disks, err := List(s.runner, s.pvStore, 0, "")
 
 	s.Require().NoError(err)
+	s.Require().NotEmpty(disks.VHDs)
 	assertCompleteVolumeInfo(s, disks)
 
 	found := From(disks.VHDs).
@@ -53,6 +55,9 @@ func (s *VHDTestSuite) TestListWithAttachedVolume() {
 			return strings.EqualFold(*h, s.vm.ID)
 		}).First()
 
+	if found == nil {
+		s.dumpJson(disks, os.Stdout)
+	}
 	s.Require().NotNil(found, "Could not find attached disk")
 }
 

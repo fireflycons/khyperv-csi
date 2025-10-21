@@ -25,7 +25,8 @@ type Runner interface {
 }
 
 type concreteRunner struct {
-	shell psg.Shell
+	shell  psg.Shell
+	logger psg.Logger
 }
 
 var _ Runner = (*concreteRunner)(nil)
@@ -71,7 +72,8 @@ func NewRunner(opts ...RunnerOptionFunc) (*concreteRunner, error) {
 	}
 
 	return &concreteRunner{
-		shell: s,
+		shell:  s,
+		logger: ro.logger,
 	}, nil
 }
 
@@ -121,7 +123,13 @@ func (r *concreteRunner) RunWithResult(cmdlets ...Cmdlet) (string, error) {
 		}
 	}
 
-	return strings.TrimSpace(stdout), err
+	output := strings.TrimSpace(stdout)
+
+	if r.logger != nil && output != "" {
+		r.logger.Infof("PowerShell Output: %s", output)
+	}
+
+	return output, err
 }
 
 // Exit releases any resources associated with the runner

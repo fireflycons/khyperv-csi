@@ -7,14 +7,14 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 # Build the nuget package
-
+$moduleName = 'khyperv-csi'
 New-Item -Path (Split-Path -Parent -Path $Target) -ItemType Directory -Force | Out-Null
 Import-Module Microsoft.PowerShell.Utility -RequiredVersion 3.1.0.0 -Force -ErrorAction Stop
 Get-Command Update-ModuleManifest | Out-Null
 $repoName = [Guid]::NewGuid().ToString()
 $artifactLocation = (Resolve-Path (Split-Path -Parent -Path $Target)).Path
-$sourceLocation = Join-Path $PSScriptRoot 'khyperv-csi'
-$manifest = Join-Path $sourceLocation 'khyperv-csi.psd1'
+$sourceLocation = Join-Path $PSScriptRoot $moduleName
+$manifest = Join-Path $sourceLocation "$moduleName.psd1"
 $moduleData = Import-PowerShellDataFile -Path $manifest
 $moduleVersion = $moduleData['ModuleVersion']
 
@@ -23,13 +23,13 @@ if ($moduleVersion -ne $Version) {
     $moduleVersion = $Version
 }
 
-$nugetPackage = Join-Path $artifactLocation "$repoName.$moduleVersion.nupkg"
+$nugetPackage = Join-Path $artifactLocation "$moduleName.$moduleVersion.nupkg"
 
 if (Test-Path $nugetPackage) {
     Remove-Item $nugetPackage -Force
 }
 
-Write-Host "Building $repoName.$moduleVersion.nupkg"
+Write-Host "Building $moduleName.$moduleVersion.nupkg"
 
 
 try {

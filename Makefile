@@ -5,7 +5,7 @@ ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
 	MOCKERY = mockery.exe
 	SWAGDIR = internal/windows
 	SWAGGERFILES = $(SWAGDIR)/controller/routes.go internal/models/rest/*.go internal/models/get-vhd.go
-	POWERSHELL = $(shell where.exe powershell.exe)
+	POWERSHELL = C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
 	SOURCE_FILES_RAW = $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -File zbuild/get-windowsdeps.ps1)
 	SOURCE_FILES = $(shell echo | set /p="$(SOURCE_FILES_RAW)")
 	LOGGING_FILES_RAW = $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted  -NoProfile -File zbuild/get-loggingdeps.ps1)
@@ -92,7 +92,7 @@ ifeq ($(detected_OS),Windows)
 PS_FILES := $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -Command 'Get-ChildItem -Recurse -Filter *.ps* -Path powershell-modules | ForEach-Object { Write-Host -NoNewLine $$_.FullName ""}')
 
 cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg: $(PS_FILES)
-	@powershell -File powershell-modules/build-module.ps1 -Version $(VERSION) -Target "$@"
+	@$(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -File powershell-modules/build-module.ps1 -Version $(VERSION) -Target "$@"
 
 .PHONY: powershell
 powershell: cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg ## (Windows) Build khyperv-csi PowerShell Module
@@ -102,11 +102,11 @@ endif
 # ------------ WINDOWS SERVICE -------------
 ifeq ($(detected_OS),Windows)
 
-khypervprovider.exe: swagger $(SOURCE_FILES_) $(LOGGING_FILES)
+khypervprovider.exe: swagger $(SOURCE_FILES) $(LOGGING_FILES)
 	go build -ldflags "-s -w" ./cmd/khypervprovider
 
 .PHONY: windows-service
-windows-service: khypervprovider.exe ## (Windows) Build REST service for Hyper-V
+windows-service: powershell khypervprovider.exe ## (Windows) Build REST service for Hyper-V
 
 endif
 
@@ -125,15 +125,18 @@ test-service: powershell install-module ## (Windows) Test Windows Service compon
 
 endif
 
-# temp/golangci-lint.ok: .golangci.yml $(GOFILES)
-# 	golangci-lint run --timeout 2m30s ./...
-# 	@mkdir -p temp
-# 	@touch temp/golangci-lint.ok
-# $(TARGET): $(GOFILES)
-# 	CGO_ENABLED=0 go build -o $(TARGET) -ldflags "$(LDFLAGS)" .
+temp/golangci-lint.ok: powershell .golangci.yml $(SOURCE_FILES) $(LOGGING_FILES)
+	golangci-lint run --timeout 2m30s ./...
+ifeq ($(detected_OS),Windows)
+	@cmd /c "if not exist temp mkdir temp"
+	@cmd /c "type nul > temp\golangci-lint.ok"
+else
+	@mkdir -p temp
+	@touch temp/golangci-lint.ok
+endif
 
-# .PHONY: lint
-# lint: temp/golangci-lint.ok	## Run linter over source code
+.PHONY: lint
+lint: temp/golangci-lint.ok	## Run linter over source code
 
 meh:
 	@$(POWERSHELL) -NoProfile -NonInteractive -Command "Get-Module -ListAvailable ; $$Host ; dir env: | select-object Key, Value | ft"
