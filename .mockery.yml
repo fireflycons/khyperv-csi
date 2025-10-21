@@ -18,8 +18,13 @@ packages:
     config:
       dir: internal/external_mocks/mock_shell
       pkgName: mock_shell
-  github.com/fireflycons/hypervcsi/internal/hyperv:
+  github.com/fireflycons/khypervcsi/internal/hyperv:
     interfaces:
       httpClient: {}
+    config:
+      filename: mocks_test.go
+  github.com/fireflycons/khypervcsi/internal/linux/kvp:
+    interfaces:
+      MetadataService: {}
     config:
       filename: mocks_test.go
