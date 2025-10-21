@@ -24,13 +24,18 @@ It comprises of the following components
 ## Requirements
 
 * A Windows machine running Hyper-V server on which you have a cluster running on Linux VMs
+* The Linux VMs must have at least one SCSI adapter attached. This is where the PVs will be mounted.
 * The Linux VMs must support the Hyper-V Data Exchange (KVP) service. If you've used AWS, this provides the same sort of information as the AWS metadata service `169.254.169.254`. You can verify this by checking the following at each node VM's terminal:
     * Directory `/var/lib/hyperv` exists.
     * This directory contains one or more files with names `.kvp_pool_X` where `X` is a number.
 
     Most modern distros support this out of the box and is provided by Linux Integration Services for Hyper-V (LIS). See [here](https://learn.microsoft.com/en-gb/windows-server/virtualization/hyper-v/Supported-Linux-and-FreeBSD-virtual-machines-for-Hyper-V-on-Windows).
 
-    If your worker nodes do not have this, then either rebuild the cluster completely on compatible VMs, or deploy new nodes that do support the KVP service, migrate your workloads there and delete the old nodes.
+    If your worker nodes do not have this, then you have the following options:
+
+    * Rebuild the cluster completely on compatible VMs.
+    * Deploy new nodes that do support the KVP service, migrate your workloads there and delete the old nodes.
+    * See if it is possible to install the missing services for your kernel version and distro.
 
 ## Installation
 
