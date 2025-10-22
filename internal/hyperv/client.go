@@ -172,45 +172,38 @@ func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publi
 
 // apiCall prepares and executes an API call to the Hyper-V REST service.
 // It handles timeouts, request creation, and response parsing.
-func apiCall[T *Q, Q any](ctx context.Context, c client, description string, target *url.URL, method string, apiKey string) (T, error) {
+func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, target *url.URL, method string, apiKey string) (T, error) {
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
+	requestCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(reqCtx, method, target.String(), http.NoBody)
+	request, err := http.NewRequestWithContext(requestCtx, method, target.String(), http.NoBody)
 
 	if err != nil {
-		return nil, fmt.Errorf("%s: cannot create request: %w", description, err)
+		return nil, fmt.Errorf("%s: cannot create request: %w", operation, err)
 	}
 
-	req.Header.Set("x-api-key", apiKey)
+	request.Header.Set("x-api-key", apiKey)
 
-	var q Q
-	response := &q
-
-	return executeRequest(c, description, req, response)
-}
-
-// executeRequest handles the HTTP plumbing and associated errors, returning any response.
-func executeRequest[T *Q, Q any](c client, operation string, request *http.Request, response T) (T, error) {
-
-	resp, err := c.client.Do(request)
+	httpResponse, err := c.client.Do(request)
 
 	if err != nil {
 		return nil, fmt.Errorf("%s: error making request: %w", operation, err)
 	}
 
-	bodyData, err := io.ReadAll(resp.Body)
+	var bodyData []byte
 
-	if resp.Body != nil {
-		_ = resp.Body.Close()
+	if httpResponse.Body != nil {
+
+		bodyData, err = io.ReadAll(httpResponse.Body)
+		_ = httpResponse.Body.Close()
+
+		if err != nil {
+			return nil, fmt.Errorf("%s: error reading result: %w", operation, err)
+		}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("%s: error reading result: %w", operation, err)
-	}
-
-	if resp.StatusCode >= http.StatusBadRequest {
+	if httpResponse.StatusCode >= http.StatusBadRequest {
 
 		errorObj := &rest.Error{}
 
@@ -221,12 +214,15 @@ func executeRequest[T *Q, Q any](c client, operation string, request *http.Reque
 		return nil, errorObj
 	}
 
+	var q Q
+	apiResonse := &q
+
 	if len(bodyData) > 0 {
 		// A response is expected
-		if err := json.Unmarshal(bodyData, response); err != nil {
+		if err := json.Unmarshal(bodyData, apiResonse); err != nil {
 			return nil, fmt.Errorf("%s: error unmarshaling response data: %w", operation, err)
 		}
 	}
 
-	return response, nil
+	return apiResonse, nil
 }
