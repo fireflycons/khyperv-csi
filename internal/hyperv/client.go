@@ -23,7 +23,7 @@ const (
 type Client interface {
 
 	// CreateVolume creates a new VHD with the given name and size
-	CreateVolume(ctx context.Context, name string, sizeBytes int32) (*rest.CreateVolumeResponse, error)
+	CreateVolume(ctx context.Context, name string, sizeBytes int64) (*rest.CreateVolumeResponse, error)
 
 	// DeleteVolume deletes a VHD with the given ID
 	DeleteVolume(ctx context.Context, volumeId string) error
@@ -46,6 +46,22 @@ type noResult struct{}
 type client struct {
 	client httpClient
 	addr   *url.URL
+	apiKey string
+}
+
+func NewClient(baseURL string, httpClient httpClient, apiKey string) (*client, error) {
+
+	parsedURL, err := url.Parse(baseURL)
+
+	if err != nil {
+		return nil, fmt.Errorf("new hyperv client: cannot parse base URL: %w", err)
+	}
+
+	return &client{
+		client: httpClient,
+		addr:   parsedURL,
+		apiKey: apiKey,
+	}, nil
 }
 
 var errNegativeValue = errors.New("argument value cannot be negative")
@@ -73,6 +89,7 @@ func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) 
 		return nil, fmt.Errorf("create volume: cannot create request: %w", err)
 	}
 
+	req.Header.Set("x-api-key", c.apiKey)
 	response := &rest.CreateVolumeResponse{}
 	return executeRequest(c, "create volume", req, response)
 }
@@ -93,6 +110,7 @@ func (c client) DeleteVolume(ctx context.Context, volumeId string) error {
 		return fmt.Errorf("delete volume: cannot create request: %w", err)
 	}
 
+	req.Header.Set("x-api-key", c.apiKey)
 	_, err = executeRequest(c, "delete volume", req, &noResult{})
 	return err
 }
@@ -121,6 +139,7 @@ func (c client) ListVolumes(ctx context.Context, maxEntries int, nextToken strin
 		return nil, fmt.Errorf("list volumes: cannot create request: %w", err)
 	}
 
+	req.Header.Set("x-api-key", c.apiKey)
 	response := &rest.ListVolumesResponse{}
 	return executeRequest(c, "list volumes", req, response)
 }
@@ -141,6 +160,7 @@ func (c client) GetCapacity(ctx context.Context) (*rest.GetCapacityResponse, err
 		return nil, fmt.Errorf("get capacity: cannot create request: %w", err)
 	}
 
+	req.Header.Set("x-api-key", c.apiKey)
 	response := &rest.GetCapacityResponse{}
 
 	return executeRequest(c, "get capacity", req, response)
@@ -156,16 +176,16 @@ const (
 // PublishVolume mounts a volume to a node
 func (c client) PublishVolume(ctx context.Context, volumeId, nodeId string) error {
 
-	return c.publsher(ctx, volumeId, nodeId, publish)
+	return c.publisher(ctx, volumeId, nodeId, publish)
 }
 
 // UnpublishVolume dismounts a volume from a node
 func (c client) UnpublishVolume(ctx context.Context, volumeId, nodeId string) error {
 
-	return c.publsher(ctx, volumeId, nodeId, unpublish)
+	return c.publisher(ctx, volumeId, nodeId, unpublish)
 }
 
-func (c client) publsher(ctx context.Context, volumeId, nodeId string, op publishOp) error {
+func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publishOp) error {
 
 	method, opName := func() (string, string) {
 		if op == publish {
@@ -187,6 +207,7 @@ func (c client) publsher(ctx context.Context, volumeId, nodeId string, op publis
 		return fmt.Errorf("%s volume: cannot create request: %w", opName, err)
 	}
 
+	req.Header.Set("x-api-key", c.apiKey)
 	_, err = executeRequest(c, opName+" volume", req, &noResult{})
 	return err
 

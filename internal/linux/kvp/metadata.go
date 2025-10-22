@@ -10,6 +10,11 @@ import (
 )
 
 const (
+	VM_NAME_KEY = "VirtualMachineName"
+	VM_ID_KEY   = "VirtualMachineId"
+)
+
+const (
 	kvpDir     = "/var/lib/hyperv"
 	keySize    = 512
 	valueSize  = 2048
