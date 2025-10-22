@@ -28,6 +28,9 @@ type Client interface {
 	// DeleteVolume deletes a VHD with the given ID
 	DeleteVolume(ctx context.Context, volumeId string) error
 
+	// GetVolume retrieves a VHD with the given ID
+	GetVolume(ctx context.Context, volumeId string) (*rest.GetVolumeResponse, error)
+
 	// ListVolumes returns a list of provisioned VHDs
 	ListVolumes(ctx context.Context, maxEntries int, nextToken string) (*rest.ListVolumesResponse, error)
 
@@ -80,18 +83,7 @@ func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) 
 		}.Encode(),
 	})
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, "POST", target.String(), http.NoBody)
-
-	if err != nil {
-		return nil, fmt.Errorf("create volume: cannot create request: %w", err)
-	}
-
-	req.Header.Set("x-api-key", c.apiKey)
-	response := &rest.GetVolumeResponse{}
-	return executeRequest(c, "create volume", req, response)
+	return apiCall[*rest.GetVolumeResponse](ctx, c, "create volume", target, "POST", c.apiKey)
 }
 
 // DeleteVolume deletes a VHD with the given ID
@@ -101,18 +93,17 @@ func (c client) DeleteVolume(ctx context.Context, volumeId string) error {
 		Path: "volume/" + volumeId,
 	})
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, "DELETE", target.String(), http.NoBody)
-
-	if err != nil {
-		return fmt.Errorf("delete volume: cannot create request: %w", err)
-	}
-
-	req.Header.Set("x-api-key", c.apiKey)
-	_, err = executeRequest(c, "delete volume", req, &noResult{})
+	_, err := apiCall[*noResult](ctx, c, "delete volume", target, "DELETE", c.apiKey)
 	return err
+}
+
+func (c client) GetVolume(ctx context.Context, volumeId string) (*rest.GetVolumeResponse, error) {
+
+	target := c.addr.ResolveReference(&url.URL{
+		Path: "volume/" + volumeId,
+	})
+
+	return apiCall[*rest.GetVolumeResponse](ctx, c, "get volume", target, "GET", c.apiKey)
 }
 
 // ListVolumes returns a list of provisioned VHDs
@@ -130,18 +121,7 @@ func (c client) ListVolumes(ctx context.Context, maxEntries int, nextToken strin
 		}.Encode(),
 	})
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, "GET", target.String(), http.NoBody)
-
-	if err != nil {
-		return nil, fmt.Errorf("list volumes: cannot create request: %w", err)
-	}
-
-	req.Header.Set("x-api-key", c.apiKey)
-	response := &rest.ListVolumesResponse{}
-	return executeRequest(c, "list volumes", req, response)
+	return apiCall[*rest.ListVolumesResponse](ctx, c, "list volumes", target, "GET", c.apiKey)
 }
 
 // GetCapacity returns the free space remaining for provisioning new VHDs
@@ -151,19 +131,7 @@ func (c client) GetCapacity(ctx context.Context) (*rest.GetCapacityResponse, err
 		Path: "capacity",
 	})
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, "GET", target.String(), http.NoBody)
-
-	if err != nil {
-		return nil, fmt.Errorf("get capacity: cannot create request: %w", err)
-	}
-
-	req.Header.Set("x-api-key", c.apiKey)
-	response := &rest.GetCapacityResponse{}
-
-	return executeRequest(c, "get capacity", req, response)
+	return apiCall[*rest.GetCapacityResponse](ctx, c, "get capacity", target, "GET", c.apiKey)
 }
 
 type publishOp int
@@ -198,22 +166,32 @@ func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publi
 		Path: "attachment/" + nodeId + "/volume/" + volumeId,
 	})
 
+	_, err := apiCall[*noResult](ctx, c, opName+" volume", target, method, c.apiKey)
+	return err
+}
+
+// apiCall prepares and executes an API call to the Hyper-V REST service.
+// It handles timeouts, request creation, and response parsing.
+func apiCall[T *Q, Q any](ctx context.Context, c client, description string, target *url.URL, method string, apiKey string) (T, error) {
+
 	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(reqCtx, method, target.String(), http.NoBody)
 
 	if err != nil {
-		return fmt.Errorf("%s volume: cannot create request: %w", opName, err)
+		return nil, fmt.Errorf("%s: cannot create request: %w", description, err)
 	}
 
-	req.Header.Set("x-api-key", c.apiKey)
-	_, err = executeRequest(c, opName+" volume", req, &noResult{})
-	return err
+	req.Header.Set("x-api-key", apiKey)
 
+	var q Q
+	response := &q
+
+	return executeRequest(c, description, req, response)
 }
 
-// executeRequest handles the HTTP plunmbing and associated errors, resturning any response.
+// executeRequest handles the HTTP plumbing and associated errors, returning any response.
 func executeRequest[T *Q, Q any](c client, operation string, request *http.Request, response T) (T, error) {
 
 	resp, err := c.client.Do(request)
