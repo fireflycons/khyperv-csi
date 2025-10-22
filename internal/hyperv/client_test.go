@@ -18,7 +18,7 @@ import (
 
 func (s *ClientTestSuite) TestExecute() {
 
-	expected := &rest.CreateVolumeResponse{
+	expected := &rest.GetVolumeResponse{
 		ID:   "id",
 		Size: 1,
 	}
@@ -35,7 +35,7 @@ func (s *ClientTestSuite) TestExecute() {
 		nil,
 	)
 
-	actual, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	actual, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.GetVolumeResponse{})
 
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)
@@ -75,7 +75,7 @@ func (s *ClientTestSuite) TestExecuteFailOnDo() {
 
 	s.mockHttp.EXPECT().Do(mock.Anything).Return(nil, expected)
 
-	_, actual := executeRequest(s.client, "test", req, &rest.CreateVolumeResponse{})
+	_, actual := executeRequest(s.client, "test", req, &rest.GetVolumeResponse{})
 	s.Require().Error(actual)
 	s.Require().Contains(actual.Error(), "error making request")
 	urlErr := &url.Error{}
@@ -102,7 +102,7 @@ func (s *ClientTestSuite) TestExecuteFailOnStatus() {
 		nil,
 	)
 
-	_, actual := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	_, actual := executeRequest(s.client, "test", s.mustNewRequest(), &rest.GetVolumeResponse{})
 
 	s.Require().Error(actual)
 	restErr := &rest.Error{}
@@ -122,7 +122,7 @@ func (s *ClientTestSuite) TestExecuteFailUnmarshallingResponse() {
 		nil,
 	)
 
-	_, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	_, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.GetVolumeResponse{})
 
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "error unmarshaling response data")
@@ -140,7 +140,7 @@ func (s *ClientTestSuite) TestExecuteFailUnmashallingError() {
 		nil,
 	)
 
-	_, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	_, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.GetVolumeResponse{})
 
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "error unmarshaling error response")
@@ -158,7 +158,7 @@ func (s *ClientTestSuite) TestExecuteFailOnTimeout() {
 
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost/", http.NoBody)
 	s.Require().NoError(err)
-	_, err = executeRequest(s.client, "test", req, &rest.CreateVolumeResponse{})
+	_, err = executeRequest(s.client, "test", req, &rest.GetVolumeResponse{})
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "error making request: context deadline exceeded")
 }
@@ -185,7 +185,7 @@ func (s *ClientTestSuite) TestExecuteFailReadResponseBody() {
 		nil,
 	)
 
-	_, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	_, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.GetVolumeResponse{})
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, errRead)
 	s.Require().Contains(err.Error(), "error reading result")

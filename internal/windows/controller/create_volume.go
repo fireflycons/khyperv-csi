@@ -10,19 +10,19 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/fireflycons/hypervcsi/internal/common"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
-	"github.com/fireflycons/hypervcsi/internal/shared"
 	"github.com/fireflycons/hypervcsi/internal/windows/messages"
 	"github.com/fireflycons/hypervcsi/internal/windows/vhd"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 )
 
-func (s *controllerServer) CreateVolume(name string, size int64) (*rest.CreateVolumeResponse, error) {
+func (s *controllerServer) CreateVolume(name string, size int64) (*rest.GetVolumeResponse, error) {
 
 	log := s.log.WithFields(logrus.Fields{
 		"volume_name":  name,
-		"storage_size": shared.FormatBytes(size),
+		"storage_size": common.FormatBytes(size),
 		"method":       "create_volume",
 	})
 	log.Info(messages.CONTROLLER_CREATE_VOLUME)
@@ -47,7 +47,8 @@ func (s *controllerServer) CreateVolume(name string, size int64) (*rest.CreateVo
 
 		log.Info(messages.CONTROLLER_VOLUME_ALREADY_CREATED)
 
-		return &rest.CreateVolumeResponse{
+		return &rest.GetVolumeResponse{
+			Name: vol.Name,
 			ID:   vol.DiskIdentifier,
 			Size: vol.Size,
 		}, nil
@@ -72,7 +73,8 @@ func (s *controllerServer) CreateVolume(name string, size int64) (*rest.CreateVo
 		return nil, rest.NewError(codes.Internal, err.Error())
 	}
 
-	resp := &rest.CreateVolumeResponse{
+	resp := &rest.GetVolumeResponse{
+		Name: vol.Name,
 		ID:   vol.DiskIdentifier,
 		Size: vol.Size,
 	}

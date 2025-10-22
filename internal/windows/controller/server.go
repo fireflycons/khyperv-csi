@@ -19,6 +19,7 @@ import (
 // to the ControllerServer running in-cluster
 type ControllerServer interface {
 	HandleCreateVolume(*gin.Context)
+	HandleGetVolume(*gin.Context)
 	HandleDeleteVolume(*gin.Context)
 	HandleListVolumes(*gin.Context)
 	HandleGetCapacity(*gin.Context)

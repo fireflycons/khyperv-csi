@@ -160,6 +160,7 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 		ginSwagger.DefaultModelsExpandDepth(-1))
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	router.GET("/volume/:name", s.controller.HandleGetVolume)
 	router.POST("/volume/:name", s.controller.HandleCreateVolume)
 	router.DELETE("/volume/:id", s.controller.HandleDeleteVolume)
 	router.GET("/volumes", s.controller.HandleListVolumes)
@@ -170,7 +171,6 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 		ctx.Redirect(http.StatusFound, "/swagger/index.html")
 	})
 
-	// Set up HTTP server and routes
 	// Shutdown on context cancel
 
 	useSSL := certFlag != "" && keyFlag != ""
@@ -215,6 +215,9 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 	return httpServer
 }
 
+// apiKeyMiddleware is a Gin middleware that checks for a valid API key
+// in the "X-Api-Key" header of incoming requests.
+// If the API key is missing or invalid, it aborts the request with a 403 Forbidden response.
 func apiKeyMiddleware(logger *logrus.Logger, apiKey string) gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
@@ -232,7 +235,7 @@ func apiKeyMiddleware(logger *logrus.Logger, apiKey string) gin.HandlerFunc {
 		if needApiKey {
 			key := ctx.Request.Header.Get("X-Api-Key")
 
-			if key == "" || key != apiKey {
+			if key == "" || !strings.EqualFold(key, apiKey) {
 				remoteAddr := func() string {
 					switch {
 					case ctx.ClientIP() != "":

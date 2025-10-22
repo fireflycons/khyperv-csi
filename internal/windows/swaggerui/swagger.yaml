@@ -17,18 +17,6 @@ definitions:
         description: Size in bytes of the disk
         type: integer
     type: object
-  rest.CreateVolumeResponse:
-    properties:
-      id:
-        description: The GUID ID assigned to the volume by Hyper-V
-        type: string
-      size:
-        description: |-
-          Actual size of the created volume.
-          If caller requests less than the minimum VHD size,
-          then this will be the minimum VHD size.
-        type: integer
-    type: object
   rest.Error:
     properties:
       code:
@@ -50,6 +38,21 @@ definitions:
         description: |-
           MinimumVolumeSize is the minimum size of a volume that can be provisioned.
           Requests for smaller volumes will result in a volume of this size being provisioned.
+        type: integer
+    type: object
+  rest.GetVolumeResponse:
+    properties:
+      id:
+        description: The GUID ID assigned to the volume by Hyper-V
+        type: string
+      name:
+        description: The name of the volume.
+        type: string
+      size:
+        description: |-
+          Actual size of the created volume.
+          If caller requests less than the minimum VHD size,
+          then this will be the minimum VHD size.
         type: integer
     type: object
   rest.ListVolumesResponse:
@@ -207,6 +210,51 @@ paths:
       tags:
       - Controller
   /volume/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Get an existing VHD
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      - description: Volume name or ID
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rest.GetVolumeResponse'
+        "400":
+          description: Invalid arguments
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Get an existing VHD
+      tags:
+      - Controller
     post:
       consumes:
       - application/json
@@ -233,7 +281,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/rest.CreateVolumeResponse'
+            $ref: '#/definitions/rest.GetVolumeResponse'
         "400":
           description: Invalid arguments
           schema:

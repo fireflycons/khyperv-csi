@@ -211,6 +211,73 @@
             }
         },
         "/volume/{name}": {
+            "get": {
+                "description": "Get an existing VHD",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Controller"
+                ],
+                "summary": "Get an existing VHD",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Volume name or ID",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/rest.GetVolumeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid arguments",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Create a new VHD",
                 "consumes": [
@@ -250,7 +317,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/rest.CreateVolumeResponse"
+                            "$ref": "#/definitions/rest.GetVolumeResponse"
                         }
                     },
                     "400": {
@@ -369,19 +436,6 @@
                 }
             }
         },
-        "rest.CreateVolumeResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "description": "The GUID ID assigned to the volume by Hyper-V",
-                    "type": "string"
-                },
-                "size": {
-                    "description": "Actual size of the created volume.\nIf caller requests less than the minimum VHD size,\nthen this will be the minimum VHD size.",
-                    "type": "integer"
-                }
-            }
-        },
         "rest.Error": {
             "type": "object",
             "properties": {
@@ -404,6 +458,23 @@
                 },
                 "minimumVolumeSize": {
                     "description": "MinimumVolumeSize is the minimum size of a volume that can be provisioned.\nRequests for smaller volumes will result in a volume of this size being provisioned.",
+                    "type": "integer"
+                }
+            }
+        },
+        "rest.GetVolumeResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "The GUID ID assigned to the volume by Hyper-V",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the volume.",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "Actual size of the created volume.\nIf caller requests less than the minimum VHD size,\nthen this will be the minimum VHD size.",
                     "type": "integer"
                 }
             }

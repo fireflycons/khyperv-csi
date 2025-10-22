@@ -28,9 +28,10 @@ func (s *ControllerTestSuite) TestCreate() {
 		DiskIdentifier: diskId,
 	}
 
-	expected := &rest.CreateVolumeResponse{
+	expected := &rest.GetVolumeResponse{
 		ID:   diskId,
 		Size: size,
+		Name: "pv1",
 	}
 
 	s.shell.EXPECT().Execute(mock.Anything).Return("", "NOT_FOUND : ", os.ErrNotExist).Once()
@@ -57,9 +58,10 @@ func (s *ControllerTestSuite) TestCreateUnderMinSize() {
 		DiskIdentifier: diskId,
 	}
 
-	expected := &rest.CreateVolumeResponse{
+	expected := &rest.GetVolumeResponse{
 		ID:   diskId,
 		Size: constants.MinimumVolumeSizeInBytes,
+		Name: "pv1",
 	}
 
 	s.shell.EXPECT().Execute(mock.Anything).Return("", "NOT_FOUND : ", os.ErrNotExist).Once()
@@ -86,9 +88,10 @@ func (s *ControllerTestSuite) TestCreateIdempotent() {
 		DiskIdentifier: diskId,
 	}
 
-	expected := &rest.CreateVolumeResponse{
+	expected := &rest.GetVolumeResponse{
 		ID:   diskId,
 		Size: size,
+		Name: "pv1",
 	}
 
 	s.shell.EXPECT().Execute(mock.Anything).Return(s.JSON(exitingVhdResponse), "", nil).Once()

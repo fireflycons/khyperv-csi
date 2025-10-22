@@ -18,7 +18,7 @@ func (s *ClientTestSuite) TestCreateVolume() {
 		size = int64(constants.MiB * 10)
 	)
 
-	expected := &rest.CreateVolumeResponse{
+	expected := &rest.GetVolumeResponse{
 		ID:   id,
 		Size: size,
 	}

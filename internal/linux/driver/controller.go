@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/fireflycons/hypervcsi/internal/common"
 	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
-	"github.com/fireflycons/hypervcsi/internal/shared"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -238,27 +238,27 @@ func (d *Driver) extractStorage(capRange *csi.CapacityRange) (int64, error) {
 	}
 
 	if requiredSet && limitSet && limitBytes < requiredBytes {
-		return 0, fmt.Errorf("limit (%v) can not be less than required (%v) size", shared.FormatBytes(limitBytes), shared.FormatBytes(requiredBytes))
+		return 0, fmt.Errorf("limit (%v) can not be less than required (%v) size", common.FormatBytes(limitBytes), common.FormatBytes(requiredBytes))
 	}
 
 	if requiredSet && !limitSet && requiredBytes < constants.MinimumVolumeSizeInBytes {
 		d.log.WithFields(logrus.Fields{
-			"required_bytes":      shared.FormatBytes(requiredBytes),
-			"minimum_volume_size": shared.FormatBytes(constants.MinimumVolumeSizeInBytes),
+			"required_bytes":      common.FormatBytes(requiredBytes),
+			"minimum_volume_size": common.FormatBytes(constants.MinimumVolumeSizeInBytes),
 		}).Warn("requiredBytes is less than minimum volume size, setting requiredBytes default to minimumVolumeSizeBytes")
 		return constants.MinimumVolumeSizeInBytes, nil
 	}
 
 	if limitSet && limitBytes < constants.MinimumVolumeSizeInBytes {
-		return 0, fmt.Errorf("limit (%v) can not be less than minimum supported volume size (%v)", shared.FormatBytes(limitBytes), shared.FormatBytes(constants.MinimumVolumeSizeInBytes))
+		return 0, fmt.Errorf("limit (%v) can not be less than minimum supported volume size (%v)", common.FormatBytes(limitBytes), common.FormatBytes(constants.MinimumVolumeSizeInBytes))
 	}
 
 	if requiredSet && requiredBytes > constants.MaximumVolumeSizeInBytes {
-		return 0, fmt.Errorf("required (%v) can not exceed maximum supported volume size (%v)", shared.FormatBytes(requiredBytes), shared.FormatBytes(constants.MaximumVolumeSizeInBytes))
+		return 0, fmt.Errorf("required (%v) can not exceed maximum supported volume size (%v)", common.FormatBytes(requiredBytes), common.FormatBytes(constants.MaximumVolumeSizeInBytes))
 	}
 
 	if !requiredSet && limitSet && limitBytes > constants.MaximumVolumeSizeInBytes {
-		return 0, fmt.Errorf("limit (%v) can not exceed maximum supported volume size (%v)", shared.FormatBytes(limitBytes), shared.FormatBytes(constants.MaximumVolumeSizeInBytes))
+		return 0, fmt.Errorf("limit (%v) can not exceed maximum supported volume size (%v)", common.FormatBytes(limitBytes), common.FormatBytes(constants.MaximumVolumeSizeInBytes))
 	}
 
 	if requiredSet && limitSet && requiredBytes == limitBytes {

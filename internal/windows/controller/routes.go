@@ -24,7 +24,7 @@ import (
 // @Tags			Controller
 // @Accept			json
 // @Produce		json
-// @Success		201	{object}	rest.CreateVolumeResponse
+// @Success		201	{object}	rest.GetVolumeResponse
 // @Failure		400	{object}	rest.Error "Invalid arguments"
 // @Failure		403	{object}	rest.Error "Access denied"
 // @Failure		409	{object}	rest.Error
@@ -60,6 +60,35 @@ func (s *controllerServer) HandleCreateVolume(ctx *gin.Context) {
 
 	resp, err := s.CreateVolume(name, sizeBytes)
 	processResponse(ctx, resp, http.StatusCreated, err)
+}
+
+// @BasePath		/
+// @Summary		Get an existing VHD
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Param			name		path	string	true	"Volume name or ID"
+// @Schemes		http
+// @Description	Get an existing VHD
+// @Tags			Controller
+// @Accept			json
+// @Produce		json
+// @Success		201	{object}	rest.GetVolumeResponse
+// @Failure		400	{object}	rest.Error "Invalid arguments"
+// @Failure		403	{object}	rest.Error "Access denied"
+// @Failure		404	{object}	rest.Error "Not found"
+// @Failure		409	{object}	rest.Error
+// @Failure		500	{object}	rest.Error
+// @Router			/volume/{name} [get]
+func (s *controllerServer) HandleGetVolume(ctx *gin.Context) {
+
+	name := ctx.Param("name")
+
+	if name == "" {
+		abortInvalidArgument(ctx, "missing volume name")
+		return
+	}
+
+	resp, err := s.GetVolume(name)
+	processResponse(ctx, resp, http.StatusOK, err)
 }
 
 // @BasePath		/

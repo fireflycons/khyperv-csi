@@ -23,7 +23,7 @@ const (
 type Client interface {
 
 	// CreateVolume creates a new VHD with the given name and size
-	CreateVolume(ctx context.Context, name string, sizeBytes int64) (*rest.CreateVolumeResponse, error)
+	CreateVolume(ctx context.Context, name string, sizeBytes int64) (*rest.GetVolumeResponse, error)
 
 	// DeleteVolume deletes a VHD with the given ID
 	DeleteVolume(ctx context.Context, volumeId string) error
@@ -67,7 +67,7 @@ func NewClient(baseURL string, httpClient httpClient, apiKey string) (*client, e
 var errNegativeValue = errors.New("argument value cannot be negative")
 
 // CreateVolume creates a new VHD with the given name and size
-func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) (*rest.CreateVolumeResponse, error) {
+func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) (*rest.GetVolumeResponse, error) {
 
 	if sizeBytes < 0 {
 		return nil, errNegativeValue
@@ -90,7 +90,7 @@ func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) 
 	}
 
 	req.Header.Set("x-api-key", c.apiKey)
-	response := &rest.CreateVolumeResponse{}
+	response := &rest.GetVolumeResponse{}
 	return executeRequest(c, "create volume", req, response)
 }
 
