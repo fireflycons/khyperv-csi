@@ -10,9 +10,11 @@ ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
 	SOURCE_FILES = $(shell echo | set /p="$(SOURCE_FILES_RAW)")
 	LOGGING_FILES_RAW = $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted  -NoProfile -File zbuild/get-loggingdeps.ps1)
 	LOGGING_FILES = $(shell echo | set /p="$(LOGGING_FILES_RAW)")
+	LINT_TARGETS = powershell
 else
     detected_OS := $(shell uname)  # same as "uname -s"
 	MOCKERY = mockery
+	LINT_TARGETS = 
 endif
 
 .PHONY: help
@@ -49,14 +51,17 @@ endif
 
 bin\$(MOCKERY):
 ifeq ($(detected_OS),Windows)
-	if not exist bin mkdir bin
-	curl -L -o mockery.tar.gz https://github.com/vektra/mockery/releases/download/v3.5.5/mockery_3.5.5_Windows_x86_64.tar.gz
-	7z x mockery.tar.gz -otmp
-	7z x tmp\mockery.tar -obin
-	del mockery.tar.gz
-	rmdir /s /q tmp
+	@if not exist bin mkdir bin
+	@curl -L -o mockery.tar.gz https://github.com/vektra/mockery/releases/download/v3.5.5/mockery_3.5.5_Windows_x86_64.tar.gz
+	@7z x mockery.tar.gz -otmp
+	@7z x tmp\mockery.tar -obin
+	@del mockery.tar.gz
+	@rmdir /s /q tmp
 else
-	@echo "TODO Linux"
+	@mkdir -p bin
+	@curl -L -o mockery.tar.gz https://github.com/vektra/mockery/releases/download/v3.5.5/mockery_3.5.5_Linux_x86_64.tar.gz
+	@tar -xzf mockery.tar.gz -C bin
+	@rm mockery.tar.gz
 endif
 
 .PHONY: install-tools
@@ -125,7 +130,7 @@ test-service: powershell install-module ## (Windows) Test Windows Service compon
 
 endif
 
-temp/golangci-lint.ok: powershell .golangci.yml $(SOURCE_FILES) $(LOGGING_FILES)
+temp/golangci-lint.ok: .golangci.yml $(SOURCE_FILES) $(LOGGING_FILES)
 	golangci-lint run --timeout 2m30s ./...
 ifeq ($(detected_OS),Windows)
 	@cmd /c "if not exist temp mkdir temp"
@@ -135,8 +140,9 @@ else
 	@touch temp/golangci-lint.ok
 endif
 
-.PHONY: lint
-lint: temp/golangci-lint.ok	## Run linter over source code
+.PHONY: lint-windows
+lint-windows: powershell temp/golangci-lint.ok
 
-meh:
-	@$(POWERSHELL) -NoProfile -NonInteractive -Command "Get-Module -ListAvailable ; $$Host ; dir env: | select-object Key, Value | ft"
+.PHONY: lint
+lint: $(LINT_TARGETS) temp/golangci-lint.ok	## Run linter over source code
+
