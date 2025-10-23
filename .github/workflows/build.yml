@@ -1,7 +1,49 @@
 name: build
 on: [push, pull_request]
 jobs:
+  precheck:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # So we can diff against the previous commit
+
+      - id: check
+        run: |
+          echo "Checking conditions to skip workflow..."
+
+          # Get latest commit message
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit message: $COMMIT_MSG"
+
+          # Check for NO-CI
+          if echo "$COMMIT_MSG" | grep -q "NO-CI"; then
+            echo "NO-CI found in commit message. Skipping."
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check for changed files
+          CHANGED=$(git diff --name-only HEAD~1)
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          # If all changed files are markdown
+          if [ -n "$CHANGED" ] && ! echo "$CHANGED" | grep -vqE '\.md$'; then
+            echo "Only markdown files changed. Skipping."
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Otherwise, continue
+          echo "No skip conditions met."
+          echo "skip=false" >> $GITHUB_OUTPUT
+
   windows-service:
+    needs: precheck
     runs-on: windows-2022
     env:
       GO111MODULE: "on"
