@@ -9,7 +9,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # So we can diff against the previous commit
+          fetch-depth: 2  # so we can diff against previous commit
 
       - id: check
         run: |
@@ -26,7 +26,7 @@ jobs:
             exit 0
           fi
 
-          # Check for changed files
+          # Get changed files
           CHANGED=$(git diff --name-only HEAD~1)
           echo "Changed files:"
           echo "$CHANGED"
@@ -38,12 +38,12 @@ jobs:
             exit 0
           fi
 
-          # Otherwise, continue
           echo "No skip conditions met."
           echo "skip=false" >> $GITHUB_OUTPUT
 
   windows-service:
     needs: precheck
+    if: ${{ needs.precheck.outputs.skip != 'true' }}
     runs-on: windows-2022
     env:
       GO111MODULE: "on"
