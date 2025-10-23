@@ -42,15 +42,20 @@ type Client interface {
 
 	// UnpublishVolume dismounts a volume from a node
 	UnpublishVolume(ctx context.Context, volumeId, nodeId string) error
+
+	// HealthCheck performs a health check on the Hyper-V REST service
+	HealthCheck(ctx context.Context) (*rest.HealthyResponse, error)
 }
 
 type noResult struct{}
 
 type client struct {
-	client httpClient
-	addr   *url.URL
-	apiKey string
+	httpClient httpClient
+	addr       *url.URL
+	apiKey     string
 }
+
+var _ Client = (*client)(nil)
 
 func NewClient(baseURL string, httpClient httpClient, apiKey string) (*client, error) {
 
@@ -61,9 +66,9 @@ func NewClient(baseURL string, httpClient httpClient, apiKey string) (*client, e
 	}
 
 	return &client{
-		client: httpClient,
-		addr:   parsedURL,
-		apiKey: apiKey,
+		httpClient: httpClient,
+		addr:       parsedURL,
+		apiKey:     apiKey,
 	}, nil
 }
 
@@ -153,6 +158,15 @@ func (c client) UnpublishVolume(ctx context.Context, volumeId, nodeId string) er
 	return c.publisher(ctx, volumeId, nodeId, unpublish)
 }
 
+func (c client) HealthCheck(ctx context.Context) (*rest.HealthyResponse, error) {
+
+	target := c.addr.ResolveReference(&url.URL{
+		Path: "healthz",
+	})
+
+	return apiCall[*rest.HealthyResponse](ctx, c, "health check", target, "GET", c.apiKey)
+}
+
 func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publishOp) error {
 
 	method, opName := func() (string, string) {
@@ -174,8 +188,13 @@ func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publi
 // It handles timeouts, request creation, and response parsing.
 func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, target *url.URL, method string, apiKey string) (T, error) {
 
-	requestCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
+	var requestCtx context.Context = ctx
+
+	if ctx == context.Background() || ctx == context.TODO() {
+		var cancel context.CancelFunc
+		requestCtx, cancel = context.WithTimeout(ctx, maxOperationWaitTime)
+		defer cancel()
+	}
 
 	request, err := http.NewRequestWithContext(requestCtx, method, target.String(), http.NoBody)
 
@@ -185,7 +204,7 @@ func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, targe
 
 	request.Header.Set("x-api-key", apiKey)
 
-	httpResponse, err := c.client.Do(request)
+	httpResponse, err := c.httpClient.Do(request)
 
 	if err != nil {
 		return nil, fmt.Errorf("%s: error making request: %w", operation, err)
@@ -215,14 +234,14 @@ func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, targe
 	}
 
 	var q Q
-	apiResonse := &q
+	apiResponse := &q
 
 	if len(bodyData) > 0 {
 		// A response is expected
-		if err := json.Unmarshal(bodyData, apiResonse); err != nil {
+		if err := json.Unmarshal(bodyData, apiResponse); err != nil {
 			return nil, fmt.Errorf("%s: error unmarshaling response data: %w", operation, err)
 		}
 	}
 
-	return apiResonse, nil
+	return apiResponse, nil
 }

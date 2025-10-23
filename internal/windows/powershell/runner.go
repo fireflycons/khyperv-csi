@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/coreos/go-semver/semver"
 	psg "github.com/fireflycons/go-powershell"
 	"github.com/fireflycons/go-powershell/backend"
 )
@@ -22,6 +23,9 @@ type Runner interface {
 
 	// Exit releases any resources associated with the runner
 	Exit()
+
+	// Version returns the version of PowerShell being used.
+	Version() *semver.Version
 }
 
 type concreteRunner struct {
@@ -93,6 +97,11 @@ func WithLogger(logger psg.Logger) RunnerOptionFunc {
 	return func(ro *runnerOptions) {
 		ro.logger = logger
 	}
+}
+
+// Version returns the version of PowerShell being used.
+func (r *concreteRunner) Version() *semver.Version {
+	return r.shell.Version()
 }
 
 // Run executes the given cmdlet(s).

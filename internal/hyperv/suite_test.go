@@ -2,10 +2,8 @@ package hyperv
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
-	"net/http"
 	"net/url"
 	"testing"
 
@@ -25,8 +23,8 @@ var (
 func (s *ClientTestSuite) BeforeTest(_, _ string) {
 	s.mockHttp = newMockhttpClient(s.T())
 	s.client = client{
-		client: s.mockHttp,
-		addr:   s.mustParseUrl("http://localhost/"),
+		httpClient: s.mockHttp,
+		addr:       s.mustParseUrl("http://localhost/"),
 	}
 }
 
@@ -60,8 +58,8 @@ func (s *ClientTestSuite) mustMarshalJSON(data any) []byte {
 	return b
 }
 
-func (s *ClientTestSuite) mustNewRequest() *http.Request {
-	req, err := http.NewRequestWithContext(context.Background(), "GET", "http://localhost/", http.NoBody)
-	s.Require().NoError(err, "mustNewRequest")
-	return req
+func (s *ClientTestSuite) mustRequestURL() *url.URL {
+	u, err := url.Parse("http://localhost/")
+	s.Require().NoError(err, "mustRequestURL")
+	return u
 }

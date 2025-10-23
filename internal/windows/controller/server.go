@@ -25,6 +25,7 @@ type ControllerServer interface {
 	HandleGetCapacity(*gin.Context)
 	HandlePublishVolume(*gin.Context)
 	HandleUnpublishVolume(*gin.Context)
+	HandleHealthCheck(*gin.Context)
 
 	Logger() *logrus.Logger
 	Close()

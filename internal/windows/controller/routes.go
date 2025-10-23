@@ -226,6 +226,32 @@ func (s *controllerServer) HandleUnpublishVolume(ctx *gin.Context) {
 	processResponse(ctx, nil, http.StatusOK, err)
 }
 
+// @BasePath		/
+// @Summary		Check Health
+// @Schemes		http
+// @Description	Checks the health of the service
+// @Tags			Controller
+// @Accept			json
+// @Produce		json
+// @Success		200 {objedt}	rest.HealthResponse
+// @Failure		500	{object}	rest.Error
+// @Router			/healthz [get]
+func (s *controllerServer) HandleHealthCheck(ctx *gin.Context) {
+	v := s.runner.Version()
+
+	if v.Major < 0 {
+		ctx.JSON(http.StatusInternalServerError, rest.Error{
+			Code:    codes.Internal,
+			Message: "Hyper-V backend unhealthy. Refer to eventlog on Hyper-V server",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, rest.HealthyResponse{
+		Status: "ok",
+	})
+}
+
 func processResponse(ctx *gin.Context, response any, okStatus int, err error) {
 
 	if err != nil {

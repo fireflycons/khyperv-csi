@@ -167,6 +167,7 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 	router.GET("/capacity", s.controller.HandleGetCapacity)
 	router.POST("/attachment/:nodeid/volume/:volid", s.controller.HandlePublishVolume)
 	router.DELETE("/attachment/:nodeid/volume/:volid", s.controller.HandleUnpublishVolume)
+	router.GET("/healthz", s.controller.HandleHealthCheck)
 	router.GET("/", func(ctx *gin.Context) {
 		ctx.Redirect(http.StatusFound, "/swagger/index.html")
 	})
@@ -224,7 +225,7 @@ func apiKeyMiddleware(logger *logrus.Logger, apiKey string) gin.HandlerFunc {
 
 		needApiKey := func() bool {
 			path := ctx.Request.URL.Path
-			for _, p := range []string{"/", "/swagger", ""} {
+			for _, p := range []string{"/", "/swagger", "/healthz"} {
 				if p == path || strings.HasPrefix(path, p) {
 					return false
 				}
