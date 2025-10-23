@@ -61,7 +61,7 @@ var (
 // called by the CO before NodePublishVolume and is used to temporary mount the
 // volume to a staging path. Once mounted, NodePublishVolume will make sure to
 // mount it to the appropriate path
-func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
+func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) { //nolint:gocyclo // cyclomatic complexity is ok here
 	if req.VolumeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "NodeStageVolume Volume ID must be provided")
 	}
@@ -90,8 +90,7 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 
 	// If it is a block volume, we do nothing for stage volume
 	// because we bind mount the absolute device path to a file
-	switch req.VolumeCapability.GetAccessType().(type) {
-	case *csi.VolumeCapability_Block:
+	if _, ok := req.GetVolumeCapability().GetAccessType().(*csi.VolumeCapability_Block); ok {
 		return &csi.NodeStageVolumeResponse{}, nil
 	}
 
@@ -101,7 +100,7 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	mnt := req.VolumeCapability.GetMount()
 	options := mnt.MountFlags
 
-	fsType := "ext4"
+	fsType := fstypeExt4
 	if mnt.FsType != "" {
 		fsType = mnt.FsType
 	}
@@ -128,7 +127,7 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	} else {
 		if d.validateAttachment {
 			if err := d.mounter.IsAttached(source); err != nil {
-				return nil, fmt.Errorf("error retrieving the attachement status %q: %s", source, err)
+				return nil, fmt.Errorf("error retrieving the attachement status %q: %w", source, err)
 			}
 		}
 
@@ -171,6 +170,7 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		}
 
 		if needResize {
+			//nolint:mnd // Enum not defined for this
 			klog.V(4).Infof("NodeStageVolume: Resizing volume %q created from a snapshot/volume", req.VolumeId)
 			if _, err := r.Resize(source, target); err != nil {
 				return nil, status.Errorf(codes.Internal, "Could not resize volume %q:  %v", req.VolumeId, err)
@@ -336,7 +336,7 @@ func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (
 	d.log.WithField("method", "node_get_info").Info("node get info called")
 	return &csi.NodeGetInfoResponse{
 		NodeId:            d.hostID(),
-		MaxVolumesPerNode: int64(d.volumeLimit),
+		MaxVolumesPerNode: int64(d.volumeLimit), //nolint:gosec // conversions are OK here
 	}, nil
 }
 
@@ -428,11 +428,9 @@ func (d *Driver) nodePublishVolumeForFileSystem(req *csi.NodePublishVolumeReques
 	target := req.TargetPath
 
 	mnt := req.VolumeCapability.GetMount()
-	for _, flag := range mnt.MountFlags {
-		mountOptions = append(mountOptions, flag)
-	}
+	mountOptions = append(mountOptions, mnt.MountFlags...)
 
-	fsType := "ext4"
+	fsType := fstypeExt4
 	if mnt.FsType != "" {
 		fsType = mnt.FsType
 	}
@@ -511,7 +509,7 @@ func findAbsoluteDeviceByIDPath(volumeName string) (string, error) {
 	// so we do not have to check if it is symlink prior to evaluation
 	resolved, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return "", fmt.Errorf("could not resolve symlink %q: %v", path, err)
+		return "", fmt.Errorf("could not resolve symlink %q: %w", path, err)
 	}
 
 	if !strings.HasPrefix(resolved, "/dev") {

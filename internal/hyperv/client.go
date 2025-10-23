@@ -186,9 +186,9 @@ func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publi
 
 // apiCall prepares and executes an API call to the Hyper-V REST service.
 // It handles timeouts, request creation, and response parsing.
-func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, target *url.URL, method string, apiKey string) (T, error) {
+func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, target *url.URL, method, apiKey string) (T, error) {
 
-	var requestCtx context.Context = ctx
+	var requestCtx = ctx
 
 	if ctx == context.Background() || ctx == context.TODO() {
 		var cancel context.CancelFunc

@@ -235,7 +235,7 @@ func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (
 
 	maxEntries := req.MaxEntries
 	if maxEntries == 0 && d.defaultVolumesPageSize > 0 {
-		maxEntries = int32(d.defaultVolumesPageSize)
+		maxEntries = int32(d.defaultVolumesPageSize) //nolint:gosec // conversions are OK here
 	}
 
 	log := d.log.WithFields(logrus.Fields{
@@ -372,7 +372,7 @@ func validateCapabilities(caps []*csi.VolumeCapability) []string {
 // range. If the capacity range is not satisfied it returns the default volume
 // size. If the capacity range is above supported sizes, it returns an
 // error. If the capacity range is below supported size, it returns the minimum supported size
-func (d *Driver) extractStorage(capRange *csi.CapacityRange) (int64, error) {
+func (d *Driver) extractStorage(capRange *csi.CapacityRange) (int64, error) { //nolint:gocyclo // cyclomatic complexity is ok here
 	if capRange == nil {
 		return constants.DefaultVolumeSizeInBytes, nil
 	}

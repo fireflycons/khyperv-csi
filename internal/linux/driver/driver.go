@@ -128,7 +128,7 @@ type NewDriverParams struct {
 // NewDriver returns a CSI plugin that contains the necessary gRPC
 // interfaces to interact with Kubernetes over unix domain sockets for
 // managing Hyper-V Block Storage
-func NewDriver(p NewDriverParams) (*Driver, error) {
+func NewDriver(p *NewDriverParams) (*Driver, error) {
 
 	driverName := p.DriverName
 	if driverName == "" {
@@ -199,7 +199,7 @@ func NewDriver(p NewDriverParams) (*Driver, error) {
 func (d *Driver) Run(ctx context.Context) error {
 	u, err := url.Parse(d.endpoint)
 	if err != nil {
-		return fmt.Errorf("unable to parse address: %q", err)
+		return fmt.Errorf("unable to parse address: %w", err)
 	}
 
 	grpcAddr := path.Join(u.Host, filepath.FromSlash(u.Path))
@@ -215,13 +215,16 @@ func (d *Driver) Run(ctx context.Context) error {
 	// deploy a new version and the socket was created from the old running
 	// plugin.
 	d.log.WithField("socket", grpcAddr).Info("removing socket")
+
+	//nolint:govet // intentional redeclaration of err
 	if err := os.Remove(grpcAddr); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove unix domain socket file %s, error: %s", grpcAddr, err)
+		return fmt.Errorf("failed to remove unix domain socket file %s, error: %w", grpcAddr, err)
 	}
 
+	//nolint:noctx // no context is ok, for now
 	grpcListener, err := net.Listen(u.Scheme, grpcAddr)
 	if err != nil {
-		return fmt.Errorf("failed to listen: %v", err)
+		return fmt.Errorf("failed to listen: %w", err)
 	}
 
 	// log response errors for better observability
@@ -251,14 +254,16 @@ func (d *Driver) Run(ctx context.Context) error {
 				w.WriteHeader(http.StatusOK)
 			})
 			d.httpSrv = &http.Server{
-				Addr:    d.debugAddr,
-				Handler: mux,
+				Addr:              d.debugAddr,
+				Handler:           mux,
+				ReadHeaderTimeout: time.Second * 2,
 			}
 		}
 	}
 
 	d.srv = grpc.NewServer(grpc.UnaryInterceptor(errHandler))
 	csi.RegisterIdentityServer(d.srv, d)
+	//nolint:gocritic // it will be removed later
 	// csi.RegisterControllerServer(d.srv, d)
 	// csi.RegisterNodeServer(d.srv, d)
 
@@ -271,8 +276,10 @@ func (d *Driver) Run(ctx context.Context) error {
 	var eg errgroup.Group
 	if d.httpSrv != nil {
 		eg.Go(func() error {
+			const shutdownTimeout = 10 * time.Second
 			<-ctx.Done()
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			//nolint:govet // intentional redeclaration of ctx. Previous usage is finished with.
+			ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 			defer cancel()
 			return d.httpSrv.Shutdown(ctx)
 		})

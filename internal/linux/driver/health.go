@@ -69,7 +69,7 @@ type hvHealthChecker struct {
 	client hyperv.Client
 }
 
-func (c *hvHealthChecker) Name() string {
+func (*hvHealthChecker) Name() string {
 	return "hyper-v"
 }
 

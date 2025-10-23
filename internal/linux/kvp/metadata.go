@@ -42,7 +42,7 @@ func New() *kvpMetadataService {
 }
 
 // IsPresent checks if the Hyper-V KVP metadata service is available.
-func (k *kvpMetadataService) IsPresent() bool {
+func (*kvpMetadataService) IsPresent() bool {
 	_, err := os.Stat(kvpDir)
 	return err == nil
 }
@@ -73,7 +73,7 @@ func (k *kvpMetadataService) Find(key string) (string, error) {
 //
 //	vmname, err := Read(3, "VirtualMachineName")
 //	vmid, err := Read(3, "VirtualMachineId")
-func (k *kvpMetadataService) Read(poolNumber int, key string) (string, error) {
+func (*kvpMetadataService) Read(poolNumber int, key string) (string, error) {
 	poolFile := filepath.Join(kvpDir, fmt.Sprintf(".kvp_pool_%d", poolNumber))
 
 	f, err := os.Open(poolFile)
@@ -119,7 +119,8 @@ func (k *kvpMetadataService) Read(poolNumber int, key string) (string, error) {
 // decodeCString decodes a C-style NULL-terminated string from a fixed buffer.
 // The KVP pool uses UTF-8 encoding padded with NULL bytes.
 func decodeCString(buf []byte) string {
-	n := bytes.IndexByte(buf, 0x00)
+	const nullTerminator = 0x00
+	n := bytes.IndexByte(buf, nullTerminator)
 	if n == -1 {
 		n = len(buf)
 	}
