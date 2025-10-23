@@ -16,6 +16,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Modified by firefycons, based on https://github.com/digitalocean/csi-digitalocean/blob/master/driver/controller.go
+// Mostly unchanged other than linter fixes.
+
 package driver
 
 import (
@@ -39,13 +42,19 @@ const (
 	runningState = "running"
 )
 
+const (
+	fstypeExt4 = "ext4"
+	fstypeExt3 = "ext3"
+	fstypeXfs  = "xfs"
+)
+
 type prodAttachmentValidator struct{}
 
-func (av *prodAttachmentValidator) readFile(name string) ([]byte, error) {
+func (*prodAttachmentValidator) readFile(name string) ([]byte, error) {
 	return os.ReadFile(name)
 }
 
-func (av *prodAttachmentValidator) evalSymlinks(path string) (string, error) {
+func (*prodAttachmentValidator) evalSymlinks(path string) (string, error) {
 	return filepath.EvalSymlinks(path)
 }
 
@@ -138,7 +147,7 @@ func (m *mounter) Format(source, fsType string) error {
 
 	_, err := exec.LookPath(mkfsCmd)
 	if err != nil {
-		if err == exec.ErrNotFound {
+		if errors.Is(err, exec.ErrNotFound) {
 			return fmt.Errorf("%q executable not found in $PATH", mkfsCmd)
 		}
 		return err
@@ -155,7 +164,7 @@ func (m *mounter) Format(source, fsType string) error {
 	}
 
 	mkfsArgs = append(mkfsArgs, source)
-	if fsType == "ext4" || fsType == "ext3" {
+	if fsType == fstypeExt4 || fsType == fstypeExt3 {
 		mkfsArgs = []string{"-F", source}
 	}
 
@@ -164,9 +173,9 @@ func (m *mounter) Format(source, fsType string) error {
 		"args": mkfsArgs,
 	}).Info("executing format command")
 
-	out, err := exec.Command(mkfsCmd, mkfsArgs...).CombinedOutput()
+	out, err := runCommand(mkfsCmd, mkfsArgs...)
 	if err != nil {
-		return fmt.Errorf("formatting disk failed: %v cmd: '%s %s' output: %q",
+		return fmt.Errorf("formatting disk failed: %w cmd: '%s %s' output: %q",
 			err, mkfsCmd, strings.Join(mkfsArgs, " "), string(out))
 	}
 
@@ -191,12 +200,12 @@ func (m *mounter) Mount(source, target, fsType string, opts ...string) error {
 		// create directory for target, os.Mkdirall is noop if directory exists
 		err := os.MkdirAll(filepath.Dir(target), 0750)
 		if err != nil {
-			return fmt.Errorf("failed to create target directory for raw block bind mount: %v", err)
+			return fmt.Errorf("failed to create target directory for raw block bind mount: %w", err)
 		}
 
 		file, err := os.OpenFile(target, os.O_CREATE, 0660)
 		if err != nil {
-			return fmt.Errorf("failed to create target file for raw block bind mount: %v", err)
+			return fmt.Errorf("failed to create target file for raw block bind mount: %w", err)
 		}
 		file.Close()
 	} else {
@@ -211,7 +220,7 @@ func (m *mounter) Mount(source, target, fsType string, opts ...string) error {
 
 	// By default, xfs does not allow mounting of two volumes with the same filesystem uuid.
 	// Force ignore this uuid to be able to mount volume + its clone / restored snapshot on the same node.
-	if fsType == "xfs" {
+	if fsType == fstypeXfs {
 		opts = append(opts, "nouuid")
 	}
 
@@ -219,17 +228,16 @@ func (m *mounter) Mount(source, target, fsType string, opts ...string) error {
 		mountArgs = append(mountArgs, "-o", strings.Join(opts, ","))
 	}
 
-	mountArgs = append(mountArgs, source)
-	mountArgs = append(mountArgs, target)
+	mountArgs = append(mountArgs, source, target)
 
 	m.log.WithFields(logrus.Fields{
 		"cmd":  mountCmd,
 		"args": mountArgs,
 	}).Info("executing mount command")
 
-	out, err := exec.Command(mountCmd, mountArgs...).CombinedOutput()
+	out, err := runCommand(mountCmd, mountArgs...)
 	if err != nil {
-		return fmt.Errorf("mounting failed: %v cmd: '%s %s' output: %q",
+		return fmt.Errorf("mounting failed: %w cmd: '%s %s' output: %q",
 			err, mountCmd, strings.Join(mountArgs, " "), string(out))
 	}
 
@@ -243,7 +251,7 @@ func (m *mounter) Unmount(target string) error {
 func (m *mounter) IsAttached(source string) error {
 	out, err := m.attachmentValidator.evalSymlinks(source)
 	if err != nil {
-		return fmt.Errorf("error evaluating the symbolic link %q: %s", source, err)
+		return fmt.Errorf("error evaluating the symbolic link %q: %w", source, err)
 	}
 
 	_, deviceName := filepath.Split(out)
@@ -254,7 +262,7 @@ func (m *mounter) IsAttached(source string) error {
 	deviceStateFilePath := fmt.Sprintf("/sys/class/block/%s/device/state", deviceName)
 	deviceStateFileContent, err := m.attachmentValidator.readFile(deviceStateFilePath)
 	if err != nil {
-		return fmt.Errorf("error reading the device state file %q: %s", deviceStateFilePath, err)
+		return fmt.Errorf("error reading the device state file %q: %w", deviceStateFilePath, err)
 	}
 
 	if string(deviceStateFileContent) != strings.TrimSpace(runningState) {
@@ -272,7 +280,7 @@ func (m *mounter) IsFormatted(source string) (bool, error) {
 	blkidCmd := "blkid"
 	_, err := exec.LookPath(blkidCmd)
 	if err != nil {
-		if err == exec.ErrNotFound {
+		if errors.Is(err, exec.ErrNotFound) {
 			return false, fmt.Errorf("%q executable not found in $PATH", blkidCmd)
 		}
 		return false, err
@@ -286,19 +294,20 @@ func (m *mounter) IsFormatted(source string) (bool, error) {
 	}).Info("checking if source is formatted")
 
 	exitCode := 0
+	//nolint:noctx // no context is ok, for now
 	cmd := exec.Command(blkidCmd, blkidArgs...)
 	err = cmd.Run()
 	if err != nil {
 		exitError, ok := err.(*exec.ExitError)
 		if !ok {
-			return false, fmt.Errorf("checking formatting failed: %v cmd: %q, args: %q", err, blkidCmd, blkidArgs)
+			return false, fmt.Errorf("checking formatting failed: %w cmd: %q, args: %q", err, blkidCmd, blkidArgs)
 		}
 		ws := exitError.Sys().(syscall.WaitStatus)
 		exitCode = ws.ExitStatus()
 		if exitCode == blkidExitStatusNoIdentifiers {
 			return false, nil
 		}
-		return false, fmt.Errorf("checking formatting failed: %v cmd: %q, args: %q", err, blkidCmd, blkidArgs)
+		return false, fmt.Errorf("checking formatting failed: %w cmd: %q, args: %q", err, blkidCmd, blkidArgs)
 	}
 
 	return true, nil
@@ -312,7 +321,7 @@ func (m *mounter) IsMounted(target string) (bool, error) {
 	findmntCmd := "findmnt"
 	_, err := exec.LookPath(findmntCmd)
 	if err != nil {
-		if err == exec.ErrNotFound {
+		if errors.Is(err, exec.ErrNotFound) {
 			return false, fmt.Errorf("%q executable not found in $PATH", findmntCmd)
 		}
 		return false, err
@@ -325,26 +334,26 @@ func (m *mounter) IsMounted(target string) (bool, error) {
 		"args": findmntArgs,
 	}).Info("checking if target is mounted")
 
-	out, err := exec.Command(findmntCmd, findmntArgs...).CombinedOutput()
+	out, err := runCommand(findmntCmd, findmntArgs...)
 	if err != nil {
 		// findmnt exits with non zero exit status if it couldn't find anything
 		if strings.TrimSpace(string(out)) == "" {
 			return false, nil
 		}
 
-		return false, fmt.Errorf("checking mounted failed: %v cmd: %q output: %q",
+		return false, fmt.Errorf("checking mounted failed: %w cmd: %q output: %q",
 			err, findmntCmd, string(out))
 	}
 
 	// no response means there is no mount
-	if string(out) == "" {
+	if len(out) == 0 {
 		return false, nil
 	}
 
 	var resp *findmntResponse
 	err = json.Unmarshal(out, &resp)
 	if err != nil {
-		return false, fmt.Errorf("couldn't unmarshal data: %q: %s", string(out), err)
+		return false, fmt.Errorf("couldn't unmarshal data: %q: %w", string(out), err)
 	}
 
 	targetFound := false
@@ -363,7 +372,7 @@ func (m *mounter) IsMounted(target string) (bool, error) {
 	return targetFound, nil
 }
 
-func (m *mounter) GetDeviceName(mounter mount.Interface, mountPath string) (string, error) {
+func (*mounter) GetDeviceName(mounter mount.Interface, mountPath string) (string, error) {
 	devicePath, _, err := mount.GetDeviceNameFromMount(mounter, mountPath)
 	return devicePath, err
 }
@@ -371,14 +380,15 @@ func (m *mounter) GetDeviceName(mounter mount.Interface, mountPath string) (stri
 func (m *mounter) GetStatistics(volumePath string) (volumeStatistics, error) {
 	isBlock, err := m.IsBlockDevice(volumePath)
 	if err != nil {
-		return volumeStatistics{}, fmt.Errorf("failed to determine if volume %s is block device: %v", volumePath, err)
+		return volumeStatistics{}, fmt.Errorf("failed to determine if volume %s is block device: %w", volumePath, err)
 	}
 
 	if isBlock {
 		// See http://man7.org/linux/man-pages/man8/blockdev.8.html for details
-		output, err := exec.Command("blockdev", "getsize64", volumePath).CombinedOutput()
+		//nolint:govet // intentional redeclaration of err
+		output, err := runCommand("blockdev", "getsize64", volumePath)
 		if err != nil {
-			return volumeStatistics{}, fmt.Errorf("error when getting size of block volume at path %s: output: %s, err: %v", volumePath, string(output), err)
+			return volumeStatistics{}, fmt.Errorf("error when getting size of block volume at path %s: output: %s, err: %w", volumePath, string(output), err)
 		}
 		strOut := strings.TrimSpace(string(output))
 		gotSizeBytes, err := strconv.ParseInt(strOut, 10, 64)
@@ -399,19 +409,19 @@ func (m *mounter) GetStatistics(volumePath string) (volumeStatistics, error) {
 	}
 
 	volStats := volumeStatistics{
-		availableBytes: int64(statfs.Bavail) * int64(statfs.Bsize),
-		totalBytes:     int64(statfs.Blocks) * int64(statfs.Bsize),
-		usedBytes:      (int64(statfs.Blocks) - int64(statfs.Bfree)) * int64(statfs.Bsize),
+		availableBytes: int64(statfs.Bavail) * statfs.Bsize,                         //nolint:gosec // conversions are OK here
+		totalBytes:     int64(statfs.Blocks) * statfs.Bsize,                         //nolint:gosec // conversions are OK here
+		usedBytes:      (int64(statfs.Blocks) - int64(statfs.Bfree)) * statfs.Bsize, //nolint:gosec // conversions are OK here
 
-		availableInodes: int64(statfs.Ffree),
-		totalInodes:     int64(statfs.Files),
-		usedInodes:      int64(statfs.Files) - int64(statfs.Ffree),
+		availableInodes: int64(statfs.Ffree),                       //nolint:gosec // conversions are OK here
+		totalInodes:     int64(statfs.Files),                       //nolint:gosec // conversions are OK here
+		usedInodes:      int64(statfs.Files) - int64(statfs.Ffree), //nolint:gosec // conversions are OK here
 	}
 
 	return volStats, nil
 }
 
-func (m *mounter) IsBlockDevice(devicePath string) (bool, error) {
+func (*mounter) IsBlockDevice(devicePath string) (bool, error) {
 	var stat unix.Stat_t
 	err := unix.Stat(devicePath, &stat)
 	if err != nil {
@@ -419,4 +429,9 @@ func (m *mounter) IsBlockDevice(devicePath string) (bool, error) {
 	}
 
 	return (stat.Mode & unix.S_IFMT) == unix.S_IFBLK, nil
+}
+
+func runCommand(cmd string, args ...string) ([]byte, error) {
+	//nolint:noctx // no context is ok, for now
+	return exec.Command(cmd, args...).CombinedOutput()
 }
