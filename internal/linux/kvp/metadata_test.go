@@ -17,11 +17,11 @@ func TestMetadata(t *testing.T) {
 		t.Skip("Hyper-V metadata service not available. Probably not running in a Hyper-V VM.")
 	}
 
-	vmName, err := s.FindMeta(kvp.VM_NAME_KEY)
+	vmName, err := s.Find(kvp.VM_NAME_KEY)
 	require.NoError(t, err, "FindMeta VirtualMachineName failed")
 	t.Logf("VirtualMachineName: %s", vmName)
 
-	vmID, err := s.FindMeta(kvp.VM_ID_KEY)
+	vmID, err := s.Find(kvp.VM_ID_KEY)
 	require.NoError(t, err, "FindMeta VirtualMachineId failed")
 	t.Logf("VirtualMachineId: %s", vmID)
 }

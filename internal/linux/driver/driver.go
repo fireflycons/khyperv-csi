@@ -1,9 +1,28 @@
 //go:build linux
 
+/*
+Copyright 2022 DigitalOcean
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// Modified by firefycons, based on https://github.com/digitalocean/csi-digitalocean/blob/master/driver/driver.go
+
 package driver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -16,6 +35,7 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/fireflycons/hypervcsi/internal/hyperv"
+	"github.com/fireflycons/hypervcsi/internal/linux/kvp"
 	"github.com/fireflycons/hypervcsi/internal/logging"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -25,9 +45,12 @@ import (
 const (
 	// DefaultDriverName defines the name that is used in Kubernetes and the CSI
 	// system for the canonical, official name of this plugin
-	DefaultDriverName = "hyperv.csi.fireflycons.io"
+	DefaultDriverName    = "hyperv.csi.fireflycons.io"
+	DefaultDriverNameRDN = "io.fireflycons.csi.hyperv"
 
 	defaultMaxVolumesPerNode = 256
+
+	defaultVolumesPageSize = 50
 )
 
 var (
@@ -46,13 +69,22 @@ type Driver struct {
 	csi.UnimplementedControllerServer
 	csi.UnimplementedNodeServer
 
+	// name is the name of the driver
 	name string
+
+	// vmName is the cached value retrieved from the KVP metadata service
+	vmName string
+
+	// vmId is the cached value retrieved from the KVP metadata service
+	vmId string
+
 	// publishInfoVolumeName is used to pass the volume name from
 	// `ControllerPublishVolume` to `NodeStageVolume or `NodePublishVolume`
 	publishInfoVolumeName string
 
 	// unix socket endpoint
-	endpoint               string
+	endpoint string
+
 	debugAddr              string
 	hostID                 func() string
 	isController           bool
@@ -61,11 +93,17 @@ type Driver struct {
 
 	srv *grpc.Server
 
+	metadata kvp.MetadataService
+
 	// To provide health check endpoint for readiness probes
 	httpSrv *http.Server
-	log     *logrus.Logger
+	log     *logrus.Entry
 
 	hypervClient hyperv.Client
+
+	mounter Mounter
+
+	healthChecker *HealthChecker
 
 	// ready defines whether the driver is ready to function. This value will
 	// be used by the `Identity` service via the `Probe()` method.
@@ -83,6 +121,7 @@ type NewDriverParams struct {
 	DefaultVolumesPageSize uint
 	ValidateAttachment     bool
 	VolumeLimit            uint
+	metadata               kvp.MetadataService
 	apiKey                 string
 }
 
@@ -90,14 +129,46 @@ type NewDriverParams struct {
 // interfaces to interact with Kubernetes over unix domain sockets for
 // managing Hyper-V Block Storage
 func NewDriver(p NewDriverParams) (*Driver, error) {
+
 	driverName := p.DriverName
 	if driverName == "" {
 		driverName = DefaultDriverName
 	}
 
+	if p.DefaultVolumesPageSize == 0 {
+		p.DefaultVolumesPageSize = defaultVolumesPageSize
+	}
+
 	log := logging.New()
 
-	client, err := hyperv.NewClient(p.URL, &http.Client{}, p.apiKey)
+	md := p.metadata
+	if md == nil {
+		md = kvp.New()
+	}
+
+	if !md.IsPresent() {
+		log.Error("Hyper-V KVP metadata service is not present; the driver cannot function")
+		return nil, errors.New("hyper-v kvp metadata service is not present")
+	}
+
+	vmName, err := md.Find(kvp.VM_NAME_KEY)
+	if err != nil {
+		log.WithError(err).Error("cannot retrieve VM name from Hyper-V KVP metadata service")
+		return nil, fmt.Errorf("cannot retrieve VM name from Hyper-V KVP metadata service: %w", err)
+	}
+
+	vmId, err := md.Find(kvp.VM_ID_KEY)
+	if err != nil {
+		log.WithError(err).Error("cannot retrieve VM ID from Hyper-V KVP metadata service")
+		return nil, fmt.Errorf("cannot retrieve VM ID from Hyper-V KVP metadata service: %w", err)
+	}
+
+	logEntry := log.WithFields(logrus.Fields{
+		"vm_name": vmName,
+		"vm_id":   vmId,
+	})
+
+	hyperVClient, err := hyperv.NewClient(p.URL, &http.Client{}, p.apiKey)
 
 	if err != nil {
 		return nil, fmt.Errorf("cannot create Hyper-V client: %w", err)
@@ -105,12 +176,22 @@ func NewDriver(p NewDriverParams) (*Driver, error) {
 
 	return &Driver{
 		name:                   driverName,
+		vmName:                 vmName,
+		vmId:                   vmId,
 		publishInfoVolumeName:  driverName + "/volume-name",
 		endpoint:               p.Endpoint,
 		debugAddr:              p.DebugAddr,
-		defaultVolumesPageSize: p.DefaultVolumesPageSize,
-		hypervClient:           client,
-		log:                    log,
+		defaultVolumesPageSize: defaultVolumesPageSize,
+		hypervClient:           hyperVClient,
+		log:                    logEntry,
+		mounter:                newMounter(logEntry),
+		metadata:               md,
+		hostID: func() string {
+			// This should not error because we already tested it during initialization
+			id, _ := md.Find(kvp.VM_ID_KEY)
+			return id
+		},
+		healthChecker: NewHealthChecker(&hvHealthChecker{client: hyperVClient}),
 	}, nil
 }
 
@@ -160,14 +241,13 @@ func (d *Driver) Run(ctx context.Context) error {
 		if d.debugAddr != "" {
 			mux := http.NewServeMux()
 			mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-				// TODO - Call backend for health check
-				//
-				// err := d.healthChecker.Check(r.Context())
-				// if err != nil {
-				// 	d.log.WithError(err).Error("executing health check")
-				// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-				// 	return
-				// }
+
+				err := d.healthChecker.Check(r.Context())
+				if err != nil {
+					d.log.WithError(err).Error("executing health check")
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				w.WriteHeader(http.StatusOK)
 			})
 			d.httpSrv = &http.Server{

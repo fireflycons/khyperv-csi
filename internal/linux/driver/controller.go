@@ -2,7 +2,25 @@
 
 package driver
 
-// Based on code from https://github.com/digitalocean/csi-digitalocean/blob/master/driver/controller.go
+/*
+Copyright 2022 DigitalOcean
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// Modified by firefycons, based on https://github.com/digitalocean/csi-digitalocean/blob/master/driver/controller.go
+// General structure and helper functions retained.
+// Core logic adapted for Hyper-V.
 
 import (
 	"context"
@@ -17,6 +35,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -67,14 +86,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	vol, err := d.hypervClient.CreateVolume(ctx, volumeName, size)
 
 	if err != nil {
-		restErr := &rest.Error{}
-		if errors.As(err, &restErr) {
-			log.WithError(err).Error("create volume failed")
-			return nil, status.Errorf(restErr.Code, "create volume failed: %s", restErr.Message)
-		}
-
-		log.WithError(err).Error("create volume failed with unknown error")
-		return nil, status.Errorf(codes.Internal, "create volume failed: %v", err)
+		return nil, processErrorReturn(err, log, "create volume")
 	}
 
 	resp := &csi.CreateVolumeResponse{
@@ -103,14 +115,7 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 
 	err := d.hypervClient.DeleteVolume(ctx, req.VolumeId)
 	if err != nil {
-		restErr := &rest.Error{}
-		if errors.As(err, &restErr) {
-			log.WithError(err).Error("delete volume failed")
-			return nil, status.Errorf(restErr.Code, "delete volume failed: %s", restErr.Message)
-		}
-
-		log.WithError(err).Error("delete volume failed with unknown error")
-		return nil, status.Errorf(codes.Internal, "delete volume failed: %v", err)
+		return nil, processErrorReturn(err, log, "delete volume")
 	}
 
 	log.Info("volume was deleted")
@@ -148,15 +153,9 @@ func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 	log.Info("controller publish volume called")
 
 	err := d.hypervClient.PublishVolume(ctx, req.VolumeId, req.NodeId)
-	if err != nil {
-		restErr := &rest.Error{}
-		if errors.As(err, &restErr) {
-			log.WithError(err).Error("publish volume failed")
-			return nil, status.Errorf(restErr.Code, "publish volume failed: %s", restErr.Message)
-		}
 
-		log.WithError(err).Error("publish volume failed with unknown error")
-		return nil, status.Errorf(codes.Internal, "publish volume failed: %v", err)
+	if err != nil {
+		return nil, processErrorReturn(err, log, "publish volume")
 	}
 
 	log.Info("volume was published")
@@ -183,23 +182,173 @@ func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 	log.Info("controller unpublish volume called")
 
 	err := d.hypervClient.UnpublishVolume(ctx, req.VolumeId, req.NodeId)
-	if err != nil {
-		restErr := &rest.Error{}
-		if errors.As(err, &restErr) {
-			log.WithError(err).Error("unpublish volume failed")
-			return nil, status.Errorf(restErr.Code, "unpublish volume failed: %s", restErr.Message)
-		}
 
-		log.WithError(err).Error("unpublish volume failed with unknown error")
-		return nil, status.Errorf(codes.Internal, "unpublish volume failed: %v", err)
+	if err != nil {
+		return nil, processErrorReturn(err, log, "unpublish volume")
 	}
 
 	log.Info("volume was unpublished")
 	return &csi.ControllerUnpublishVolumeResponse{}, nil
 }
 
-// validateCapabilities validates the requested capabilities. It returns a list
-// of violations which may be empty if no violatons were found.
+// ValidateVolumeCapabilities checks whether the volume capabilities requested are supported.
+func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+	if req.VolumeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "ValidateVolumeCapabilities Volume ID must be provided")
+	}
+
+	if req.VolumeCapabilities == nil {
+		return nil, status.Error(codes.InvalidArgument, "ValidateVolumeCapabilities Volume Capabilities must be provided")
+	}
+
+	log := d.log.WithFields(logrus.Fields{
+		"volume_id":              req.VolumeId,
+		"volume_capabilities":    req.VolumeCapabilities,
+		"supported_capabilities": supportedAccessMode,
+		"method":                 "validate_volume_capabilities",
+	})
+	log.Info("validate volume capabilities called")
+
+	// check if volume exists before trying to validate it
+	_, err := d.hypervClient.GetVolume(ctx, req.VolumeId)
+
+	if err != nil {
+		return nil, processErrorReturn(err, log, "get volume")
+	}
+
+	// Since we don't have topology constraints, then because it exists, it's valid
+	resp := &csi.ValidateVolumeCapabilitiesResponse{
+		Confirmed: &csi.ValidateVolumeCapabilitiesResponse_Confirmed{
+			VolumeCapabilities: []*csi.VolumeCapability{
+				{
+					AccessMode: supportedAccessMode,
+				},
+			},
+		},
+	}
+
+	log.WithField("confirmed", resp.Confirmed).Info("supported capabilities")
+	return resp, nil
+}
+
+func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
+
+	maxEntries := req.MaxEntries
+	if maxEntries == 0 && d.defaultVolumesPageSize > 0 {
+		maxEntries = int32(d.defaultVolumesPageSize)
+	}
+
+	log := d.log.WithFields(logrus.Fields{
+		"max_entries":           req.MaxEntries,
+		"effective_max_entries": maxEntries,
+		"req_starting_token":    req.StartingToken,
+		"method":                "list_volumes",
+	})
+	log.Info("list volumes called")
+
+	volumesResp, err := d.hypervClient.ListVolumes(ctx, int(maxEntries), req.StartingToken)
+
+	if err != nil {
+		return nil, processErrorReturn(err, log, "list volumes")
+	}
+
+	resp := &csi.ListVolumesResponse{
+		NextToken: volumesResp.NextToken,
+		Entries:   make([]*csi.ListVolumesResponse_Entry, 0, len(volumesResp.Volumes)),
+	}
+
+	for _, v := range volumesResp.Volumes {
+		resp.Entries = append(resp.Entries, &csi.ListVolumesResponse_Entry{
+			Volume: &csi.Volume{
+				VolumeId:      v.DiskIdentifier,
+				CapacityBytes: v.Size,
+			},
+		})
+	}
+
+	log.WithField("num_volume_entries", len(resp.Entries)).Info("volumes listed")
+	return resp, nil
+}
+
+// GetCapacity returns the capacity of the storage pool
+func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
+
+	log := d.log.WithFields(logrus.Fields{
+		"params": req.Parameters,
+		"method": "get_capacity",
+	})
+	log.Info("get capacity called")
+
+	capResp, err := d.hypervClient.GetCapacity(ctx)
+
+	if err != nil {
+		return nil, processErrorReturn(err, log, "get capacity")
+	}
+
+	log.WithField("available_capacity_bytes", capResp.AvailableCapacity).Info("capacity retrieved")
+
+	return &csi.GetCapacityResponse{
+		AvailableCapacity: capResp.AvailableCapacity,
+		MaximumVolumeSize: &wrapperspb.Int64Value{
+			Value: constants.MaximumVolumeSizeInBytes,
+		},
+		MinimumVolumeSize: &wrapperspb.Int64Value{
+			Value: capResp.MinimumVolumeSize,
+		},
+	}, nil
+}
+
+// ControllerGetCapabilities returns the capabilities of the controller service.
+func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
+
+	newCap := func(cap csi.ControllerServiceCapability_RPC_Type) *csi.ControllerServiceCapability {
+		return &csi.ControllerServiceCapability{
+			Type: &csi.ControllerServiceCapability_Rpc{
+				Rpc: &csi.ControllerServiceCapability_RPC{
+					Type: cap,
+				},
+			},
+		}
+	}
+
+	var caps []*csi.ControllerServiceCapability
+	for _, cap := range []csi.ControllerServiceCapability_RPC_Type{
+		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
+		csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
+		csi.ControllerServiceCapability_RPC_LIST_VOLUMES,
+		// csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
+		// csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
+		// csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
+		csi.ControllerServiceCapability_RPC_LIST_VOLUMES_PUBLISHED_NODES,
+	} {
+		caps = append(caps, newCap(cap))
+	}
+
+	resp := &csi.ControllerGetCapabilitiesResponse{
+		Capabilities: caps,
+	}
+
+	d.log.WithFields(logrus.Fields{
+		"response": resp,
+		"method":   "controller_get_capabilities",
+	}).Info("controller get capabilities called")
+	return resp, nil
+}
+
+func processErrorReturn(err error, log *logrus.Entry, action string) error {
+
+	restErr := &rest.Error{}
+	if errors.As(err, &restErr) {
+		log.WithError(err).Errorf("%s failed", action)
+		return status.Errorf(restErr.Code, "%s failed: %s", action, restErr.Message)
+	}
+
+	log.WithError(err).Errorf("%s failed with unknown error", action)
+	return status.Errorf(codes.Internal, "%s failed: %v", action, err)
+}
+
+// validateCapabilities validates the requested capabilities.
+// It returns a list of violations which may be empty if no violations were found.
 func validateCapabilities(caps []*csi.VolumeCapability) []string {
 	violations := sets.NewString()
 	for _, cap := range caps {

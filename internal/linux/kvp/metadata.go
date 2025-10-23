@@ -27,11 +27,11 @@ type MetadataService interface {
 	// IsPresent checks if the Hyper-V KVP metadata service is available.
 	IsPresent() bool
 
-	// FindMeta searches all KVP pools for the given key and returns its value.
-	FindMeta(key string) (string, error)
+	// Find searches all KVP pools for the given key and returns its value.
+	Find(key string) (string, error)
 
-	// ReadMeta reads the value for a given key from a specific KVP pool.
-	ReadMeta(poolNumber int, key string) (string, error)
+	// Read reads the value for a given key from a specific KVP pool.
+	Read(poolNumber int, key string) (string, error)
 }
 
 type kvpMetadataService struct{}
@@ -47,13 +47,13 @@ func (k *kvpMetadataService) IsPresent() bool {
 	return err == nil
 }
 
-// FindMeta searches all KVP pools for the given key and returns its value.
-func (k *kvpMetadataService) FindMeta(key string) (string, error) {
+// Find searches all KVP pools for the given key and returns its value.
+func (k *kvpMetadataService) Find(key string) (string, error) {
 
 	results := make([]string, 0, 1)
 
 	for _, poolNum := range getPoolNumbers() {
-		val, err := k.ReadMeta(poolNum, key)
+		val, err := k.Read(poolNum, key)
 		if err == nil {
 			results = append(results, val)
 		}
@@ -69,11 +69,11 @@ func (k *kvpMetadataService) FindMeta(key string) (string, error) {
 	}
 }
 
-// ReadMeta scans the given Hyper-V KVP pool file for a key and returns its value if found.
+// Read scans the given Hyper-V KVP pool file for a key and returns its value if found.
 //
-//	vmname, err := ReadMeta(3, "VirtualMachineName")
-//	vmid, err := ReadMeta(3, "VirtualMachineId")
-func (k *kvpMetadataService) ReadMeta(poolNumber int, key string) (string, error) {
+//	vmname, err := Read(3, "VirtualMachineName")
+//	vmid, err := Read(3, "VirtualMachineId")
+func (k *kvpMetadataService) Read(poolNumber int, key string) (string, error) {
 	poolFile := filepath.Join(kvpDir, fmt.Sprintf(".kvp_pool_%d", poolNumber))
 
 	f, err := os.Open(poolFile)
