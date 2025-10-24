@@ -30,6 +30,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const hvHealthCheckerName = "hyper-v"
+
 // HealthCheck is the interface that must be implemented to be compatible with
 // `HealthChecker`.
 type HealthCheck interface {
@@ -70,7 +72,7 @@ type hvHealthChecker struct {
 }
 
 func (*hvHealthChecker) Name() string {
-	return "hyper-v"
+	return hvHealthCheckerName
 }
 
 func (c *hvHealthChecker) Check(ctx context.Context) error {

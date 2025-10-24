@@ -85,8 +85,6 @@ const (
 )
 
 // Mounter is responsible for formatting and mounting volumes
-// TODO(timoreimann): find a more suitable name since the interface encompasses
-// more than just mounting functionality by now.
 type Mounter interface {
 	// Format formats the source with the given filesystem type
 	Format(source, fsType string) error
