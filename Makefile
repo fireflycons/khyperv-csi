@@ -11,10 +11,12 @@ ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
 	LOGGING_FILES_RAW = $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted  -NoProfile -File zbuild/get-loggingdeps.ps1)
 	LOGGING_FILES = $(shell echo | set /p="$(LOGGING_FILES_RAW)")
 	LINT_TARGETS = powershell
+	MOCK_TARGETS = internal/windows/powershell/runner.go
 else
     detected_OS := $(shell uname)  # same as "uname -s"
 	MOCKERY = mockery
 	LINT_TARGETS = 
+	MOCK_TARGETS = internal/linux/driver/mounter.go internal/linux/kvp/metadata.go
 endif
 
 .PHONY: help
@@ -49,7 +51,7 @@ endif
 
 ##@ Environment
 
-bin\$(MOCKERY):
+bin/$(MOCKERY):
 ifeq ($(detected_OS),Windows)
 	@if not exist bin mkdir bin
 	@curl -L -o mockery.tar.gz https://github.com/vektra/mockery/releases/download/v3.5.5/mockery_3.5.5_Windows_x86_64.tar.gz
@@ -65,20 +67,20 @@ else
 endif
 
 .PHONY: install-tools
-install-tools: bin\$(MOCKERY)  ## Install build tools
+install-tools: bin/$(MOCKERY)  ## Install build tools
 
 
 ##@ Build
 
 # ------------ MOCKS -------------
-temp/mocks.build: internal/windows/powershell/runner.go go.mod
+temp/mocks.build: install-tools $(MOCK_TARGETS) go.mod
 ifeq ($(detected_OS),Windows)
-	if not exist temp mkdir temp
+	@if not exist temp mkdir temp
 else
-	mkdir -p temp
+	@mkdir -p temp
 endif
-	bin\$(MOCKERY)
-	echo "mocks built" > temp/mocks.build
+	@bin/$(MOCKERY)
+	@echo "mocks built" > temp/mocks.build
 
 .PHONY: mocks ## Generate mocks
 mocks: temp/mocks.build
