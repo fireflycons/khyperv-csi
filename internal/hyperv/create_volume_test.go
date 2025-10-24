@@ -28,7 +28,7 @@ func (s *ClientTestSuite) TestCreateVolume() {
 			StatusCode: http.StatusCreated,
 			Body: &closeableBuffer{
 				buf: bytes.NewBuffer(
-					s.mustMarshalJSON(expected),
+					s.MustMarshalJSON(expected),
 				),
 			},
 		},

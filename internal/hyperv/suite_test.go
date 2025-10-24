@@ -2,16 +2,16 @@ package hyperv
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"net/url"
 	"testing"
 
+	"github.com/fireflycons/hypervcsi/internal/common"
 	"github.com/stretchr/testify/suite"
 )
 
 type ClientTestSuite struct {
-	suite.Suite
+	common.SuiteBase
 	mockHttp *mockhttpClient
 	client   client
 }
@@ -50,12 +50,6 @@ func (s *ClientTestSuite) mustParseUrl(addr string) *url.URL {
 	u, err := url.Parse(addr)
 	s.Require().NoError(err, "cannot parse URL")
 	return u
-}
-
-func (s *ClientTestSuite) mustMarshalJSON(data any) []byte {
-	b, err := json.Marshal(data)
-	s.Require().NoError(err, "cannot marshal JSON")
-	return b
 }
 
 func (s *ClientTestSuite) mustRequestURL() *url.URL {

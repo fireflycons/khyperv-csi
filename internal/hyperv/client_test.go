@@ -28,7 +28,7 @@ func (s *ClientTestSuite) TestExecute() {
 			StatusCode: http.StatusCreated,
 			Body: &closeableBuffer{
 				buf: bytes.NewBuffer(
-					s.mustMarshalJSON(expected),
+					s.MustMarshalJSON(expected),
 				),
 			},
 		},
@@ -95,7 +95,7 @@ func (s *ClientTestSuite) TestExecuteFailOnStatus() {
 			StatusCode: http.StatusInternalServerError,
 			Body: &closeableBuffer{
 				buf: bytes.NewBuffer(
-					s.mustMarshalJSON(expected),
+					s.MustMarshalJSON(expected),
 				),
 			},
 		},
