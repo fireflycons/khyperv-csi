@@ -15,7 +15,7 @@ import (
 	"github.com/fireflycons/hypervcsi/internal/models"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
 	"github.com/google/uuid"
-	"github.com/kubernetes-csi/csi-test/v4/pkg/sanity"
+	"github.com/kubernetes-csi/csi-test/v5/pkg/sanity"
 	"google.golang.org/grpc/codes"
 	"k8s.io/mount-utils"
 )
