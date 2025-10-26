@@ -100,6 +100,8 @@ function Get-DisksImpl{
 
     if ($NextToken -match '^\d+$') {
         $offset = [int]$NextToken
+    } elseif ($nextToken -ne "") {
+        throw "ABORTED : Invalid starting token"
     }
 
     $max = if ($MaxEntries -gt 0) {

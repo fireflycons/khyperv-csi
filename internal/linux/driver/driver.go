@@ -263,9 +263,8 @@ func (d *Driver) Run(ctx context.Context) error {
 
 	d.srv = grpc.NewServer(grpc.UnaryInterceptor(errHandler))
 	csi.RegisterIdentityServer(d.srv, d)
-	//nolint:gocritic // it will be removed later
-	// csi.RegisterControllerServer(d.srv, d)
-	// csi.RegisterNodeServer(d.srv, d)
+	csi.RegisterControllerServer(d.srv, d)
+	csi.RegisterNodeServer(d.srv, d)
 
 	d.ready = true // we're now ready to go!
 	d.log.WithFields(logrus.Fields{

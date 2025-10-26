@@ -13,7 +13,7 @@ import (
 func (s *ClientTestSuite) TestListVolume() {
 
 	expected := &rest.ListVolumesResponse{
-		Volumes: []models.GetVHDResponse{
+		Volumes: []*models.GetVHDResponse{
 			{
 				DiskIdentifier: "1",
 			},

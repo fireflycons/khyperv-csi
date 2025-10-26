@@ -170,6 +170,8 @@ func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 // ControllerUnpublishVolume deattaches the given volume from the node
 func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 
+	v := req.VolumeId
+	_ = v
 	if req.VolumeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "ControllerUnpublishVolume Volume ID must be provided")
 	}
