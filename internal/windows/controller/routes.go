@@ -233,7 +233,7 @@ func (s *controllerServer) HandleUnpublishVolume(ctx *gin.Context) {
 // @Tags			Controller
 // @Accept			json
 // @Produce		json
-// @Success		200 {objedt}	rest.HealthResponse
+// @Success		200 {object}	rest.HealthyResponse
 // @Failure		500	{object}	rest.Error
 // @Router			/healthz [get]
 func (s *controllerServer) HandleHealthCheck(ctx *gin.Context) {
@@ -250,6 +250,22 @@ func (s *controllerServer) HandleHealthCheck(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, rest.HealthyResponse{
 		Status: "ok",
 	})
+}
+
+// @BasePath		/
+// @Summary		List Virtual Machines
+// @Schemes		http
+// @Description	Lists all VMs on the HYper-V server
+// @Tags			Controller
+// @Accept			json
+// @Produce		json
+// @Success		200 {object}	rest.ListVMResponse
+// @Failure		500	{object}	rest.Error
+// @Router			/vms [get]
+func (s *controllerServer) HandleListVMs(ctx *gin.Context) {
+
+	vms, err := s.ListVms()
+	processResponse(ctx, vms, http.StatusOK, err)
 }
 
 func processResponse(ctx *gin.Context, response any, okStatus int, err error) {

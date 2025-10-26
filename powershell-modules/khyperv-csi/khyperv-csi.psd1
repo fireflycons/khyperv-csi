@@ -37,7 +37,7 @@ RequiredModules = @('Hyper-V')
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Dismount-Disk', 'Get-Attachments', 'Get-Capacity', 'Get-Disk', 'Get-Disks', 'Get-Store',
-               'Get-VMId', 'Mount-Disk', 'New-Disk', 'New-TestVM', 'Remove-Disk',
+               'Get-VMId', 'Get-VirtualMachines', 'Mount-Disk', 'New-Disk', 'New-TestVM', 'Remove-Disk',
                'Test-Exception'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

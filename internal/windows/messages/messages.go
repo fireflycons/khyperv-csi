@@ -21,6 +21,10 @@ const (
 	CONTROLLER_VOLUME_CREATED         = "volume was created"
 	CONTROLLER_STORAGE_FULL           = "storage space full"
 
+	CONTROLLER_LIST_VMS        = "list VMs called"
+	CONTROLLER_LIST_VMS_FAILED = "list VMs failed"
+	CONTROLLER_VMS_LISTED      = "VMs were listed"
+
 	CONTROLLER_VOLUME_DELETE        = "delete volume called"
 	CONTROLLER_VOLUME_DELETED       = "volume was deleted"
 	CONTROLLER_VOLUME_DELETE_FAILED = "unable to delete volume"

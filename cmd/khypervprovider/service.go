@@ -168,6 +168,7 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 	router.POST("/attachment/:nodeid/volume/:volid", s.controller.HandlePublishVolume)
 	router.DELETE("/attachment/:nodeid/volume/:volid", s.controller.HandleUnpublishVolume)
 	router.GET("/healthz", s.controller.HandleHealthCheck)
+	router.GET("/vms", s.controller.HandleListVMs)
 	router.GET("/", func(ctx *gin.Context) {
 		ctx.Redirect(http.StatusFound, "/swagger/index.html")
 	})

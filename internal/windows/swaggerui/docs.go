@@ -167,6 +167,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/healthz": {
+            "get": {
+                "description": "Checks the health of the service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Controller"
+                ],
+                "summary": "Check Health",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.HealthyResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/vms": {
+            "get": {
+                "description": "Lists all VMs on the HYper-V server",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Controller"
+                ],
+                "summary": "List Virtual Machines",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ListVMResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/volume/{id}": {
             "delete": {
                 "description": "Delete a VHD",
@@ -447,6 +505,23 @@ const docTemplate = `{
                 }
             }
         },
+        "models.GetVMResponse": {
+            "type": "object",
+            "properties": {
+                "Generation": {
+                    "type": "integer"
+                },
+                "Id": {
+                    "type": "string"
+                },
+                "Name": {
+                    "type": "string"
+                },
+                "Path": {
+                    "type": "string"
+                }
+            }
+        },
         "rest.Error": {
             "type": "object",
             "properties": {
@@ -487,6 +562,26 @@ const docTemplate = `{
                 "size": {
                     "description": "Actual size of the created volume.\nIf caller requests less than the minimum VHD size,\nthen this will be the minimum VHD size.",
                     "type": "integer"
+                }
+            }
+        },
+        "rest.HealthyResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "description": "Status indicates the health status of the service",
+                    "type": "string"
+                }
+            }
+        },
+        "rest.ListVMResponse": {
+            "type": "object",
+            "properties": {
+                "vms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.GetVMResponse"
+                    }
                 }
             }
         },

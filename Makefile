@@ -123,7 +123,7 @@ endif
 ifeq ($(detected_OS),Windows)
 
 .PHONY: install-module
-install-module: powershell
+install-module: powershell ## (Windows) Install the powershell module as current user (for tests)
 	@$(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -NonInteractive -File cmd\khypervprovider\psmodule\install-module.ps1 -Package cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg -CurrentUser
 
 .PHONY: test-service

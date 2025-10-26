@@ -17,6 +17,17 @@ definitions:
         description: Size in bytes of the disk
         type: integer
     type: object
+  models.GetVMResponse:
+    properties:
+      Generation:
+        type: integer
+      Id:
+        type: string
+      Name:
+        type: string
+      Path:
+        type: string
+    type: object
   rest.Error:
     properties:
       code:
@@ -54,6 +65,19 @@ definitions:
           If caller requests less than the minimum VHD size,
           then this will be the minimum VHD size.
         type: integer
+    type: object
+  rest.HealthyResponse:
+    properties:
+      status:
+        description: Status indicates the health status of the service
+        type: string
+    type: object
+  rest.ListVMResponse:
+    properties:
+      vms:
+        items:
+          $ref: '#/definitions/models.GetVMResponse'
+        type: array
     type: object
   rest.ListVolumesResponse:
     properties:
@@ -171,6 +195,44 @@ paths:
           schema:
             $ref: '#/definitions/rest.Error'
       summary: Get storage capacity
+      tags:
+      - Controller
+  /healthz:
+    get:
+      consumes:
+      - application/json
+      description: Checks the health of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.HealthyResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Check Health
+      tags:
+      - Controller
+  /vms:
+    get:
+      consumes:
+      - application/json
+      description: Lists all VMs on the HYper-V server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.ListVMResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: List Virtual Machines
       tags:
       - Controller
   /volume/{id}:

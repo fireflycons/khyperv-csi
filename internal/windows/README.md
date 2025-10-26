@@ -13,3 +13,4 @@ Performs the low-level operations to manage VHDs:
 | `Attach`      | Attach a VHD to a VM                                | `POST`      | `http://backend/attachment/node/:nodeid/volume/:volid` |
 | `Detach`      | Remove a VHD from a VM                              | `DELETE`    | `http://backend/attachment/node/:nodeid/volume/:volid` |
 | `GetCapacity` | Return available storage space for VHDs on the host | `GET`       | `http://backend/capacity`                              |
+| `LitsVms`     | Return all VMs on the host                          | `GET`       | `http://backend/vms`                                   |
