@@ -29,11 +29,11 @@ func New(isDebug bool) (*WinEventLogHook, error) {
 
 	} else {
 
-		var err error
-
-		if err = RegisterEventSource(); err != nil {
+		if err := RegisterEventSource(); err != nil {
 			return emptyHook, err
 		}
+
+		var err error
 
 		el, err = eventlog.Open(constants.ServiceName)
 
