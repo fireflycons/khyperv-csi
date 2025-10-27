@@ -41,9 +41,30 @@ jobs:
           echo "No skip conditions met."
           echo "skip=false" >> $GITHUB_OUTPUT
 
-  windows-service:
+  lint:
     needs: precheck
     if: ${{ needs.precheck.outputs.skip != 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.1'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.4.0
+
+  windows-service:
+    needs: lint
     runs-on: windows-2022
     env:
       GO111MODULE: "on"
@@ -64,11 +85,26 @@ jobs:
           make windows-service
         shell: cmd
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
+      - name: Test
+        run: make test
+        shell: cmd
+
+  cluster-components:
+    needs: lint
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
         with:
-          version: v2.4.0
+          go-version: '1.25.1'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Go modules
+        run: go mod download
 
       - name: Test
-        run: make test-service
+        run: make test
         shell: cmd
