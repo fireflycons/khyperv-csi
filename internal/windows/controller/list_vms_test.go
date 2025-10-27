@@ -1,7 +1,8 @@
+//go:build windows
+
 package controller
 
 import (
-	"github.com/fireflycons/hypervcsi/internal/models"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
 	"github.com/fireflycons/hypervcsi/internal/windows/messages"
 	"github.com/stretchr/testify/mock"
@@ -10,11 +11,11 @@ import (
 func (s *ControllerTestSuite) TestListVms() {
 
 	vms := &rest.ListVMResponse{
-		VMs: []*models.GetVMResponse{
+		VMs: []*rest.GetVMResponse{
 			{
 				Name:       "pv1",
-				ID:         "00000000-0000-0000-0000-0000000000000",
-				Path:       "C:\\temp\\pv1;00000000-0000-0000-0000-0000000000000.vhdx",
+				ID:         "constants.ZeroUUID0",
+				Path:       "C:\\temp\\pv1;constants.ZeroUUID0.vhdx",
 				Generation: 2,
 			},
 		},

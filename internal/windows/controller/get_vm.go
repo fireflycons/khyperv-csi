@@ -9,21 +9,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (s *controllerServer) ListVms() (*rest.ListVMResponse, error) {
+func (s *controllerServer) GetVm(nodeId string) (*rest.GetVMResponse, error) {
 
 	log := s.log.WithFields(logrus.Fields{
-		"method": "list_vms",
+		"method": "get_vm",
 	})
 
-	log.Info(messages.CONTROLLER_LIST_VMS)
+	log.Info(messages.CONTROLLER_GET_VM)
 
-	vms, err := vhd.GetVMs(s.runner)
+	vm, err := vhd.GetVM(s.runner, nodeId)
 
 	if err != nil {
-		return nil, s.processError(err, log, messages.CONTROLLER_LIST_VMS_FAILED)
+		return nil, s.processError(err, log, messages.CONTROLLER_GET_VM_FAILED)
 	}
 
-	log.Info(messages.CONTROLLER_VMS_LISTED)
+	log.Info(messages.CONTROLLER_GOT_VM)
 
-	return vms, nil
+	return vm, nil
 }

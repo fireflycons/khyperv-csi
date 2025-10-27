@@ -37,7 +37,7 @@ func (s *VHDTestSuite) TestGet() {
 	})
 
 	s.T().Run("by ID not found", func(*testing.T) {
-		_, err := GetByID(s.runner, s.pvStore, "00000000-0000-0000-0000-000000000000")
+		_, err := GetByID(s.runner, s.pvStore, "constants.ZeroUUID")
 		runnerError := &powershell.RunnerError{}
 		s.Require().ErrorAs(err, &runnerError)
 		s.Require().Equal(codes.NotFound, runnerError.Code)

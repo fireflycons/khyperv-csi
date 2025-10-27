@@ -25,6 +25,10 @@ const (
 	CONTROLLER_LIST_VMS_FAILED = "list VMs failed"
 	CONTROLLER_VMS_LISTED      = "VMs were listed"
 
+	CONTROLLER_GET_VM        = "get VM called"
+	CONTROLLER_GET_VM_FAILED = "get VM failed"
+	CONTROLLER_GOT_VM        = "got VM"
+
 	CONTROLLER_VOLUME_DELETE        = "delete volume called"
 	CONTROLLER_VOLUME_DELETED       = "volume was deleted"
 	CONTROLLER_VOLUME_DELETE_FAILED = "unable to delete volume"

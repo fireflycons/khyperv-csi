@@ -14,7 +14,7 @@ func (s *ControllerTestSuite) TestGetVolume() {
 
 	disk := models.GetVHDResponse{
 		Name:           "pv1",
-		DiskIdentifier: "00000000-0000-0000-0000-000000000000",
+		DiskIdentifier: "constants.ZeroUUID",
 	}
 
 	vols := &models.ListVHDResponse{

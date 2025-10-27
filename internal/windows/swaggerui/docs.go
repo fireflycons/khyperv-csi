@@ -25,7 +25,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Publish Volume",
                 "parameters": [
@@ -78,7 +78,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Unpublish Volume",
                 "parameters": [
@@ -133,7 +133,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Get storage capacity",
                 "parameters": [
@@ -177,7 +177,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Probe"
                 ],
                 "summary": "Check Health",
                 "responses": {
@@ -196,9 +196,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/vms": {
+        "/vm": {
             "get": {
-                "description": "Lists all VMs on the HYper-V server",
+                "description": "Gets a VM by node ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -206,9 +206,63 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Virtual Machines"
+                ],
+                "summary": "Get Virtual Machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "nodeid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.GetVMResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/vms": {
+            "get": {
+                "description": "Lists all VMs on the Hyper-V server",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Virtual Machines"
                 ],
                 "summary": "List Virtual Machines",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -235,7 +289,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Delete a VHD",
                 "parameters": [
@@ -289,7 +343,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Get an existing VHD",
                 "parameters": [
@@ -356,7 +410,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Create a new VHD",
                 "parameters": [
@@ -426,7 +480,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "List volumes",
                 "parameters": [
@@ -505,23 +559,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.GetVMResponse": {
-            "type": "object",
-            "properties": {
-                "Generation": {
-                    "type": "integer"
-                },
-                "Id": {
-                    "type": "string"
-                },
-                "Name": {
-                    "type": "string"
-                },
-                "Path": {
-                    "type": "string"
-                }
-            }
-        },
         "rest.Error": {
             "type": "object",
             "properties": {
@@ -545,6 +582,23 @@ const docTemplate = `{
                 "minimumVolumeSize": {
                     "description": "MinimumVolumeSize is the minimum size of a volume that can be provisioned.\nRequests for smaller volumes will result in a volume of this size being provisioned.",
                     "type": "integer"
+                }
+            }
+        },
+        "rest.GetVMResponse": {
+            "type": "object",
+            "properties": {
+                "Generation": {
+                    "type": "integer"
+                },
+                "Id": {
+                    "type": "string"
+                },
+                "Name": {
+                    "type": "string"
+                },
+                "Path": {
+                    "type": "string"
                 }
             }
         },
@@ -580,7 +634,7 @@ const docTemplate = `{
                 "vms": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.GetVMResponse"
+                        "$ref": "#/definitions/rest.GetVMResponse"
                     }
                 }
             }

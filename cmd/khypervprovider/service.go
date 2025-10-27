@@ -94,6 +94,7 @@ func runService(name string, isDebug bool) {
 		logger = logging.NewDebug()
 	} else {
 		logger = logging.New()
+		gin.SetMode(gin.ReleaseMode)
 	}
 
 	logger.Info(fmt.Sprintf("starting %s service", name))
@@ -169,6 +170,7 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 	router.DELETE("/attachment/:nodeid/volume/:volid", s.controller.HandleUnpublishVolume)
 	router.GET("/healthz", s.controller.HandleHealthCheck)
 	router.GET("/vms", s.controller.HandleListVMs)
+	router.GET("/vm", s.controller.HandleGetVM)
 	router.GET("/", func(ctx *gin.Context) {
 		ctx.Redirect(http.StatusFound, "/swagger/index.html")
 	})

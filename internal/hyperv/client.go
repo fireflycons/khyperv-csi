@@ -43,6 +43,12 @@ type Client interface {
 	// UnpublishVolume dismounts a volume from a node
 	UnpublishVolume(ctx context.Context, volumeId, nodeId string) error
 
+	// ListVms returns a list of all VMs defined in the Hyper-V server
+	ListVms(ctx context.Context) (*rest.ListVMResponse, error)
+
+	// GetVm gets the VM with the given ID
+	GetVm(ctx context.Context, nodeId string) (*rest.GetVMResponse, error)
+
 	// HealthCheck performs a health check on the Hyper-V REST service
 	HealthCheck(ctx context.Context) (*rest.HealthyResponse, error)
 }
@@ -137,6 +143,30 @@ func (c client) GetCapacity(ctx context.Context) (*rest.GetCapacityResponse, err
 	})
 
 	return apiCall[*rest.GetCapacityResponse](ctx, c, "get capacity", target, "GET", c.apiKey)
+}
+
+// ListVms returns a list of all VMs defined in the Hyper-V server
+func (c client) ListVms(ctx context.Context) (*rest.ListVMResponse, error) {
+
+	target := c.addr.ResolveReference(&url.URL{
+		Path: "vms",
+	})
+
+	return apiCall[*rest.ListVMResponse](ctx, c, "list vms", target, "GET", c.apiKey)
+}
+
+// GetVm gets the VM with the given ID
+func (c client) GetVm(ctx context.Context, nodeId string) (*rest.GetVMResponse, error) {
+
+		target := c.addr.ResolveReference(&url.URL{
+		Path: "vms",
+		RawQuery: url.Values{
+			"id": {nodeId},
+		}.Encode(),
+	})
+
+	return apiCall[*rest.GetVMResponse](ctx, c, "get vm", target, "GET", c.apiKey)
+
 }
 
 type publishOp int

@@ -18,11 +18,11 @@ func (s *ControllerTestSuite) TestCreate() {
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "00000000-0000-0000-0000-000000000000"
+		diskId = "constants.ZeroUUID"
 	)
 
 	newVhdResponse := &models.GetVHDResponse{
-		Path:           "C:\\Temp\\pv1;00000000-0000-0000-0000-000000000000.vhdx",
+		Path:           "C:\\Temp\\pv1;constants.ZeroUUID.vhdx",
 		Name:           "pv1",
 		Size:           size,
 		DiskIdentifier: diskId,
@@ -48,11 +48,11 @@ func (s *ControllerTestSuite) TestCreateUnderMinSize() {
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "00000000-0000-0000-0000-000000000000"
+		diskId = "constants.ZeroUUID"
 	)
 
 	newVhdResponse := &models.GetVHDResponse{
-		Path:           "C:\\Temp\\pv1;00000000-0000-0000-0000-000000000000.vhdx",
+		Path:           "C:\\Temp\\pv1;constants.ZeroUUID.vhdx",
 		Name:           "pv1",
 		Size:           constants.MinimumVolumeSizeInBytes,
 		DiskIdentifier: diskId,
@@ -78,11 +78,11 @@ func (s *ControllerTestSuite) TestCreateIdempotent() {
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "00000000-0000-0000-0000-000000000000"
+		diskId = "constants.ZeroUUID"
 	)
 
 	exitingVhdResponse := &models.GetVHDResponse{
-		Path:           "C:\\Temp\\pv1;00000000-0000-0000-0000-000000000000.vhdx",
+		Path:           "C:\\Temp\\pv1;constants.ZeroUUID.vhdx",
 		Name:           "pv1",
 		Size:           size,
 		DiskIdentifier: diskId,
@@ -107,7 +107,7 @@ func (s *ControllerTestSuite) TestCreateResourceExhausted() {
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "00000000-0000-0000-0000-000000000000"
+		diskId = "constants.ZeroUUID"
 	)
 
 	s.shell.EXPECT().Execute(mock.Anything).Return("", "NOT_FOUND : ", os.ErrNotExist).Once()
@@ -126,11 +126,11 @@ func (s *ControllerTestSuite) TestCreateWithDifferentSizeWhenDiskExistsIsError()
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "00000000-0000-0000-0000-000000000000"
+		diskId = "constants.ZeroUUID"
 	)
 
 	exitingVhdResponse := &models.GetVHDResponse{
-		Path:           "C:\\Temp\\pv1;00000000-0000-0000-0000-000000000000.vhdx",
+		Path:           "C:\\Temp\\pv1;constants.ZeroUUID.vhdx",
 		Name:           "pv1",
 		Size:           size * 2,
 		DiskIdentifier: diskId,

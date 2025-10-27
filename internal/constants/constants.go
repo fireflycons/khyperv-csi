@@ -21,6 +21,10 @@ const (
 )
 
 const (
+	ZeroUUID = "00000000-0000-0000-0000-000000000000"
+)
+
+const (
 	// minimumVolumeSizeInBytes is used to validate that the user is not trying
 	// to create a volume that is smaller than what we support
 	MinimumVolumeSizeInBytes int64 = 5 * MiB

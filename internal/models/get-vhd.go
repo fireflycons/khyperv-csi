@@ -1,11 +1,5 @@
 package models
 
-type GetVHDRequest struct {
-	Path       *string
-	VmID       *string
-	DiskNumber *int
-}
-
 type GetVHDResponse struct {
 	// Path to the disk file
 	Path string `json:"Path"`
