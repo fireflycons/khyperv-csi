@@ -48,8 +48,6 @@ const (
 	DefaultDriverName    = "hyperv.csi.fireflycons.io"
 	DefaultDriverNameRDN = "io.fireflycons.csi.hyperv"
 
-	defaultMaxVolumesPerNode = 256
-
 	defaultVolumesPageSize = 50
 )
 

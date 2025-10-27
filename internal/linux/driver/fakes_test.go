@@ -30,7 +30,7 @@ type fakeClient struct {
 
 var _ hyperv.Client = (*fakeClient)(nil)
 
-func (f *fakeClient) HealthCheck(context.Context) (*rest.HealthyResponse, error) {
+func (*fakeClient) HealthCheck(context.Context) (*rest.HealthyResponse, error) {
 	return &rest.HealthyResponse{
 		Status: "ok",
 	}, nil
@@ -143,7 +143,7 @@ func (f *fakeClient) GetVolume(_ context.Context, volumeId string) (*rest.GetVol
 	}
 }
 
-func (f *fakeClient) GetCapacity(_ context.Context) (*rest.GetCapacityResponse, error) {
+func (*fakeClient) GetCapacity(_ context.Context) (*rest.GetCapacityResponse, error) {
 	return &rest.GetCapacityResponse{
 		AvailableCapacity: constants.TiB,
 		MinimumVolumeSize: constants.MinimumVolumeSizeInBytes,
@@ -220,6 +220,7 @@ func randString(n int) string {
 	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	b := make([]byte, n)
 	for i := range b {
+		//nolint:gosec // crypto-random is not required for this
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
@@ -231,11 +232,11 @@ type fakeMounter struct {
 
 var _ Mounter = (*fakeMounter)(nil)
 
-func (f *fakeMounter) Format(source string, fsType string) error {
+func (*fakeMounter) Format(source, fsType string) error {
 	return nil
 }
 
-func (f *fakeMounter) Mount(source string, target string, fsType string, options ...string) error {
+func (f *fakeMounter) Mount(source, target, fsType string, options ...string) error {
 	f.mounted[target] = source
 	return nil
 }
@@ -253,11 +254,11 @@ func (f *fakeMounter) GetDeviceName(_ mount.Interface, mountPath string) (string
 	return "", nil
 }
 
-func (f *fakeMounter) IsAttached(source string) error {
+func (*fakeMounter) IsAttached(source string) error {
 	return nil
 }
 
-func (f *fakeMounter) IsFormatted(source string) (bool, error) {
+func (*fakeMounter) IsFormatted(source string) (bool, error) {
 	return true, nil
 }
 func (f *fakeMounter) IsMounted(target string) (bool, error) {
@@ -276,7 +277,7 @@ func (f *fakeMounter) checkMountPath(path string) (sanity.PathKind, error) {
 	return sanity.PathIsNotFound, nil
 }
 
-func (f *fakeMounter) GetStatistics(volumePath string) (volumeStatistics, error) {
+func (*fakeMounter) GetStatistics(volumePath string) (volumeStatistics, error) {
 	return volumeStatistics{
 		availableBytes: 3 * constants.GiB,
 		totalBytes:     10 * constants.GiB,
@@ -288,6 +289,6 @@ func (f *fakeMounter) GetStatistics(volumePath string) (volumeStatistics, error)
 	}, nil
 }
 
-func (f *fakeMounter) IsBlockDevice(volumePath string) (bool, error) {
+func (*fakeMounter) IsBlockDevice(volumePath string) (bool, error) {
 	return false, nil
 }
