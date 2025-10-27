@@ -32,6 +32,7 @@ import (
 	"github.com/fireflycons/hypervcsi/internal/common"
 	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -46,6 +47,11 @@ var (
 	supportedAccessMode = &csi.VolumeCapability_AccessMode{
 		Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
 	}
+)
+
+type (
+	volumeIdentifier string
+	nodeIdentifier   string
 )
 
 // CreateVolume creates a new volume from the given request. The function is idempotent.
@@ -100,7 +106,8 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	return resp, nil
 }
 
-// DeleteVolume deletes the given volume. The function is idempotent.
+// DeleteVolume deletes the given volume. The function is idempotent,
+// thus an invalid volume ID means nothing other than "it was already deleted"
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 
 	if req.VolumeId == "" {
@@ -125,12 +132,8 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 // ControllerPublishVolume attaches the given volume to the node
 func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 
-	if req.VolumeId == "" {
-		return nil, status.Error(codes.InvalidArgument, "ControllerPublishVolume Volume ID must be provided")
-	}
-
-	if req.NodeId == "" {
-		return nil, status.Error(codes.InvalidArgument, "ControllerPublishVolume Node ID must be provided")
+	if err := validateIds("ControllerPublishVolume", volumeIdentifier(req.VolumeId), nodeIdentifier(req.NodeId)); err != nil {
+		return nil, err
 	}
 
 	if req.VolumeCapability == nil {
@@ -152,14 +155,23 @@ func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 	})
 	log.Info("controller publish volume called")
 
-	err := d.hypervClient.PublishVolume(ctx, req.VolumeId, req.NodeId)
-
+	// Verify the volume exists
+	_, err := d.hypervClient.GetVolume(ctx, req.VolumeId)
 	if err != nil {
+		return nil, processErrorReturn(err, log, "publish volume - volume does not exist")
+	}
+
+	// Verify the node exists
+	if _, err := d.hypervClient.GetVm(ctx, req.NodeId); err != nil {
+		return nil, processErrorReturn(err, log, "publish volume - node does not exist")
+	}
+
+	if err := d.hypervClient.PublishVolume(ctx, req.VolumeId, req.NodeId); err != nil {
 		return nil, processErrorReturn(err, log, "publish volume")
 	}
 
 	log.Info("volume was published")
-	// TODO Do we need to return the volume name as distinct from the ID?
+
 	return &csi.ControllerPublishVolumeResponse{
 		PublishContext: map[string]string{
 			d.publishInfoVolumeName: req.VolumeId,
@@ -170,10 +182,8 @@ func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 // ControllerUnpublishVolume deattaches the given volume from the node
 func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 
-	v := req.VolumeId
-	_ = v
-	if req.VolumeId == "" {
-		return nil, status.Error(codes.InvalidArgument, "ControllerUnpublishVolume Volume ID must be provided")
+	if err := validateIds("ControllerUnpublishVolume", volumeIdentifier(req.VolumeId), nodeIdentifier(req.NodeId)); err != nil {
+		return nil, err
 	}
 
 	log := d.log.WithFields(logrus.Fields{
@@ -195,8 +205,9 @@ func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 
 // ValidateVolumeCapabilities checks whether the volume capabilities requested are supported.
 func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
-	if req.VolumeId == "" {
-		return nil, status.Error(codes.InvalidArgument, "ValidateVolumeCapabilities Volume ID must be provided")
+
+	if err := validateIds("ControllerUnpublishVolume", volumeIdentifier(req.VolumeId)); err != nil {
+		return nil, err
 	}
 
 	if req.VolumeCapabilities == nil {
@@ -425,4 +436,41 @@ func (d *Driver) extractStorage(capRange *csi.CapacityRange) (int64, error) { //
 	}
 
 	return constants.DefaultVolumeSizeInBytes, nil
+}
+
+func validateIds(op string, ids ...any) error {
+
+	for _, id := range ids {
+		var idType, idValue string
+
+		switch v := id.(type) {
+		case volumeIdentifier:
+			idType = "volume"
+			idValue = string(v)
+		case nodeIdentifier:
+			idType = "node"
+			idValue = string(v)
+		default:
+			continue
+		}
+
+		if idValue == "" {
+			return status.Error(codes.InvalidArgument, fmt.Sprintf("%s %s ID must be provided", op, idType))
+		}
+
+		if !isValidId(idValue) {
+			// For CSI compliance, an invalid ID format is the same as not found
+			// since it woould indeed not be found.
+			return status.Error(codes.NotFound, fmt.Sprintf("%s invalid %s ID", op, idType))
+		}
+	}
+
+	return nil
+}
+
+// isValidId checks whether a given volume or node ID is in UUID format
+func isValidId(id string) bool {
+
+	_, err := uuid.Parse(id)
+	return err == nil
 }

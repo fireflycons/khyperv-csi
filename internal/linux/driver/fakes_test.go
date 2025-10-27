@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 
 	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/fireflycons/hypervcsi/internal/hyperv"
@@ -83,6 +84,8 @@ func (f *fakeClient) CreateVolume(_ context.Context, name string, sizeBytes int6
 	}
 
 	// Idempotency check
+	// Since CreateVolume doesn't know the ID before the backend is called
+	// this check needs to be done here.
 	for _, v := range f.volumes {
 		if v.Name == name {
 			if v.Size == sizeBytes {
@@ -159,20 +162,10 @@ func (f *fakeClient) PublishVolume(_ context.Context, volumeId, nodeId string) e
 		}
 	}
 
-	found := false
-
-	for _, n := range f.nodes {
-		if n == nodeId {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		return &rest.Error{
-			Code:    codes.NotFound,
-			Message: "node does not exist",
-		}
+	// Idempotency check
+	// TODO - In the controller, not here
+	if v.Host != nil && *v.Host == nodeId {
+		return nil
 	}
 
 	if v.Host == nil {
@@ -193,6 +186,34 @@ func (f *fakeClient) UnpublishVolume(ctx context.Context, volumeId, nodeId strin
 	}
 
 	return nil
+}
+
+func (f *fakeClient) GetVm(_ context.Context, nodeId string) (*rest.GetVMResponse, error) {
+
+	for _, n := range f.nodes {
+		if strings.EqualFold(n, nodeId) {
+			return &rest.GetVMResponse{
+				ID: nodeId,
+			}, nil
+		}
+	}
+
+	return nil, &rest.Error{
+		Code:    codes.NotFound,
+		Message: "Node not found",
+	}
+}
+
+func (f *fakeClient) ListVms(_ context.Context) (*rest.ListVMResponse, error) {
+	vms := make([]*rest.GetVMResponse, 0, len(f.nodes))
+
+	for _, n := range f.nodes {
+		vms = append(vms, &rest.GetVMResponse{ID: n})
+	}
+
+	return &rest.ListVMResponse{
+		VMs: vms,
+	}, nil
 }
 
 func randString(n int) string {

@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kubernetes-csi/csi-test/v5/pkg/sanity"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -25,7 +26,7 @@ var vms = make(map[int]string, numVms)
 
 type idGenerator struct{}
 
-func (g *idGenerator) GenerateUniqueValidVolumeID() string {
+func (*idGenerator) GenerateUniqueValidVolumeID() string {
 	return uuid.New().String()
 }
 
@@ -33,19 +34,20 @@ func (g *idGenerator) GenerateInvalidVolumeID() string {
 	return g.GenerateUniqueValidVolumeID()
 }
 
-func (g *idGenerator) GenerateUniqueValidNodeID() string {
-	return vms[0]
+func (*idGenerator) GenerateUniqueValidNodeID() string {
+	return uuid.New().String()
 }
 
-func (g *idGenerator) GenerateInvalidNodeID() string {
-	return uuid.New().String()
+func (*idGenerator) GenerateInvalidNodeID() string {
+	return "invalid id"
 }
 
 func TestDriverSuite(t *testing.T) {
 	socket := "/tmp/csi.sock"
 	endpoint := "unix://" + socket
-	if err := os.Remove(socket); err != nil && !os.IsNotExist(err) {
-		t.Fatalf("failed to remove unix domain socket file %s, error: %s", socket, err)
+
+	if err := os.Remove(socket); err != nil {
+		require.ErrorIs(t, err, os.ErrNotExist, "failed to remove unix domain socket file %s", socket)
 	}
 
 	volumes := map[string]*models.GetVHDResponse{}
@@ -65,6 +67,12 @@ func TestDriverSuite(t *testing.T) {
 		nodes:   vms,
 	}
 
+	l := logrus.New()
+
+	// Comment these 2 lines to get log output
+	devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	l.Out = devNull
+
 	driver := &Driver{
 		name:     DefaultDriverName,
 		endpoint: endpoint,
@@ -74,7 +82,7 @@ func TestDriverSuite(t *testing.T) {
 			return vms[i]
 		},
 		mounter:      fm,
-		log:          logrus.New().WithField("test_enabed", true),
+		log:          l.WithField("test_enabed", true),
 		hypervClient: client,
 	}
 
@@ -86,12 +94,9 @@ func TestDriverSuite(t *testing.T) {
 	})
 
 	cfg := sanity.NewTestConfig()
-	if err := os.RemoveAll(cfg.TargetPath); err != nil {
-		t.Fatalf("failed to delete target path %s: %s", cfg.TargetPath, err)
-	}
-	if err := os.RemoveAll(cfg.StagingPath); err != nil {
-		t.Fatalf("failed to delete staging path %s: %s", cfg.StagingPath, err)
-	}
+	require.NoError(t, os.RemoveAll(cfg.TargetPath), "failed to delete target path %s", cfg.TargetPath)
+	require.NoError(t, os.RemoveAll(cfg.StagingPath), "failed to delete staging path %s", cfg.StagingPath)
+
 	cfg.Address = endpoint
 	cfg.IDGen = &idGenerator{}
 	cfg.IdempotentCount = 5
@@ -101,7 +106,5 @@ func TestDriverSuite(t *testing.T) {
 	sanity.Test(t, cfg)
 
 	cancel()
-	if err := eg.Wait(); err != nil {
-		t.Errorf("driver run failed: %s", err)
-	}
+	require.NoError(t, eg.Wait(), "driver run failed: %s")
 }
