@@ -12,10 +12,12 @@ ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
 	LOGGING_FILES = $(shell echo | set /p="$(LOGGING_FILES_RAW)")
 	LINT_TARGETS = powershell
 	MOCK_TARGETS = internal/windows/powershell/runner.go
+	TEST_TARGETS = powershell install-module
 else
     detected_OS := $(shell uname)  # same as "uname -s"
 	MOCKERY = mockery
 	LINT_TARGETS = 
+	TEST_TARGETS = 
 	MOCK_TARGETS = internal/linux/driver/mounter.go internal/linux/kvp/metadata.go
 endif
 
@@ -126,11 +128,12 @@ ifeq ($(detected_OS),Windows)
 install-module: powershell ## (Windows) Install the powershell module as current user (for tests)
 	@$(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -NonInteractive -File cmd\khypervprovider\psmodule\install-module.ps1 -Package cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg -CurrentUser
 
-.PHONY: test-service
-test-service: powershell install-module ## (Windows) Test Windows Service components
+endif
+
+.PHONY: test
+test: $(TEST_TARGETS) ## Test components approriate for OS this runs on
 	@go test -timeout 1m -v ./...
 
-endif
 
 temp/golangci-lint.ok: .golangci.yml $(SOURCE_FILES) $(LOGGING_FILES)
 	golangci-lint run --timeout 2m30s ./...
