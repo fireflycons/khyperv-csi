@@ -119,8 +119,8 @@ type NewDriverParams struct {
 	DefaultVolumesPageSize uint
 	ValidateAttachment     bool
 	VolumeLimit            uint
-	metadata               kvp.MetadataService
-	apiKey                 string
+	Metadata               kvp.MetadataService
+	ApiKey                 string
 }
 
 // NewDriver returns a CSI plugin that contains the necessary gRPC
@@ -139,7 +139,7 @@ func NewDriver(p *NewDriverParams) (*Driver, error) {
 
 	log := logging.New()
 
-	md := p.metadata
+	md := p.Metadata
 	if md == nil {
 		md = kvp.New()
 	}
@@ -166,7 +166,7 @@ func NewDriver(p *NewDriverParams) (*Driver, error) {
 		"vm_id":   vmId,
 	})
 
-	hyperVClient, err := hyperv.NewClient(p.URL, &http.Client{}, p.apiKey)
+	hyperVClient, err := hyperv.NewClient(p.URL, &http.Client{}, p.ApiKey)
 
 	if err != nil {
 		return nil, fmt.Errorf("cannot create Hyper-V client: %w", err)
