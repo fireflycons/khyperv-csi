@@ -6,3 +6,5 @@ powershell-modules/publish/
 *.crt
 *.key
 /notes.md
+khypervprovider.exe
+hyperv-csi-plugin

@@ -79,17 +79,16 @@ jobs:
       - name: Download Go modules
         run: go mod download
 
-      - name: Build
-        run: |
-          make -v
-          make windows-service
-        shell: cmd
-
       - name: Test
         run: make test
         shell: cmd
 
-  cluster-components:
+      - name: Build
+        run: |
+          make executable
+        shell: cmd
+
+  linux-csi-driver:
     needs: lint
     runs-on: ubuntu-latest
     env:
@@ -107,4 +106,8 @@ jobs:
 
       - name: Test
         run: make test
+
+      - name: Build
+        run: |
+          make executable
 

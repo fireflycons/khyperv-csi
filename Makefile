@@ -3,6 +3,7 @@ VERSION = 1.0.0
 ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
     detected_OS := Windows
 	MOCKERY = mockery.exe
+	SWAGGER = swagger
 	SWAGDIR = internal/windows
 	SWAGGERFILES = $(SWAGDIR)/controller/routes.go internal/models/rest/*.go internal/models/get-vhd.go
 	POWERSHELL = C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
@@ -13,12 +14,23 @@ ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
 	LINT_TARGETS = powershell
 	MOCK_TARGETS = internal/windows/powershell/runner.go
 	TEST_TARGETS = powershell install-module
+	BIN_TARGET = khypervprovider.exe
+	MAIN_DIR = ./cmd/khypervprovider
+	CGO =
+	MODULE_TARGET = powershell
 else
     detected_OS := $(shell uname)  # same as "uname -s"
 	MOCKERY = mockery
-	LINT_TARGETS = 
-	TEST_TARGETS = 
+	SWAGGER =
+	SOURCE_FILES = $(shell find ./cmd/csi ./internal/common ./internal/constants ./internal/linux ./internal/models -type f -name '*.go' -print )
+	LOGGING_FILES = $(shell find ./internal/logging/ -type d -name wineventlog -prune -o -type f -name '*.go' -not -name 'win*.go' -print)
+	LINT_TARGETS =
+	TEST_TARGETS =
 	MOCK_TARGETS = internal/linux/driver/mounter.go internal/linux/kvp/metadata.go
+	BIN_TARGET = hyperv-csi-plugin
+	MAIN_DIR = ./cmd/csi
+	CGO = CGO_ENABLED=0
+	MODULE_TARGET =
 endif
 
 .PHONY: help
@@ -108,20 +120,18 @@ powershell: cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg ## (Window
 
 endif
 
-# ------------ WINDOWS SERVICE -------------
-ifeq ($(detected_OS),Windows)
+# ------------ EXECUTABLE -------------
 
-khypervprovider.exe: swagger $(SOURCE_FILES) $(LOGGING_FILES)
-	go build -ldflags "-s -w" ./cmd/khypervprovider
+$(BIN_TARGET): $(SWAGGER) $(SOURCE_FILES) $(LOGGING_FILES)
+	$(CGO) go build -o $(BIN_TARGET) -ldflags "-s -w" $(MAIN_DIR)
 
-.PHONY: windows-service
-windows-service: powershell khypervprovider.exe ## (Windows) Build REST service for Hyper-V
+.PHONY: executable
+executable: $(MODULE_TARGET) $(BIN_TARGET) ## Build Executable (Hyper-V service on Windows, Driver on Linux)
 
-endif
 
 ##@ Testing
 
-# ------------ TESTS: WINDOWS SERVICE -------------
+# ------------------ TESTS ------------------
 ifeq ($(detected_OS),Windows)
 
 .PHONY: install-module
