@@ -74,7 +74,7 @@ func runDriver(*cobra.Command, []string) {
 	}()
 
 	if err := drv.Run(ctx); err != nil {
-		log.Fatalln(err)
+		log.Printf("Failed to start driver: %v", err)
 	}
 
 }
