@@ -136,6 +136,8 @@ jobs:
     #- windows-service
     - linux-csi-driver
     runs-on: ubuntu-latest
+    env:
+      DOCKER_PAT: ${{ secrets.DOCKERHUB_PAT }}
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -154,5 +156,9 @@ jobs:
           driver=$(basename "$(find ./linux-csi-driver -type f -name '*')")
           cp ./linux-csi-driver/$driver $driver
           chmod +x $driver
-          docker build -t $driver --build-arg EXECUTABLE=$driver -f docker/Dockerfile .
+          docker build -t fireflycons/hyperv-csi-plugin:0.1.0 --build-arg EXECUTABLE=$driver -f docker/Dockerfile .
 
+      - name: Push Image
+        run: |
+          docker login -u fireflycons --password-stdin <<< $DOCKER_PAT
+          docker push fireflycons/hyperv-csi-plugin:0.1.0
