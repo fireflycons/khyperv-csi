@@ -69,37 +69,37 @@ jobs:
       # - name: helm-lint
       #   run: helm lint --set apiKey=meh --set controller.serviceUrl=http://example.com chart
 
-  windows-service:
-    needs: lint
-    runs-on: windows-2022
-    env:
-      GO111MODULE: "on"
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.1'
-      - name: Checkout code
-        uses: actions/checkout@v4
+  # windows-service:
+  #   needs: lint
+  #   runs-on: windows-2022
+  #   env:
+  #     GO111MODULE: "on"
+  #   steps:
+  #     - name: Install Go
+  #       uses: actions/setup-go@v5
+  #       with:
+  #         go-version: '1.25.1'
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Download Go modules
-        run: go mod download
+  #     - name: Download Go modules
+  #       run: go mod download
 
-      - name: Test
-        run: make test
-        shell: cmd
+  #     - name: Test
+  #       run: make test
+  #       shell: cmd
 
-      - name: Build
-        run: |
-          make executable
-        shell: cmd
+  #     - name: Build
+  #       run: |
+  #         make executable
+  #       shell: cmd
 
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-service
-          path: ${{ env.ARTIFACT }}
-          retention-days: 1
+  #     - name: 'Upload Artifact'
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: windows-service
+  #         path: ${{ env.ARTIFACT }}
+  #         retention-days: 1
 
   linux-csi-driver:
     needs: lint
@@ -127,13 +127,13 @@ jobs:
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: linunx-csi-driver
+          name: linux-csi-driver
           path: ${{ env.ARTIFACT }}
           retention-days: 1
 
   publish:
     needs:
-    - windows-service
+    #- windows-service
     - linux-csi-driver
     runs-on: ubuntu-latest
     steps:
@@ -147,3 +147,14 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: build-image
+        run: |
+          driver=$(basename "$(find ./linux-csi-driver -type f -name '*')")
+          cp /linux-csi-driver/$driver $driver
+          chmod +x $driver
+          docker build -t $driver --build-arg EXECUTABLE=$driver -f docker/Dockerfile .
+
