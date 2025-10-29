@@ -1,0 +1,123 @@
+{{- if eq ( .Values.controller.serviceUrl | default "" ) "" -}}
+{{- fail "controller.serviceUrl must be provided" -}}
+{{- end -}}
+
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: csi-hv-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  serviceName: "csi-hv"
+  selector:
+    matchLabels:
+      app: csi-hv-controller
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: csi-hv-plugin
+      labels:
+        app: csi-hv-controller
+        role: csi-hv
+    spec:
+      priorityClassName: system-cluster-critical
+      serviceAccount: csi-hv-controller-sa
+      containers:
+        - name: csi-hv-plugin
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+{{- if .Values.controller.caCert }}
+          command:
+          - /bin/sh
+          - -c
+          args:
+            - |
+              echo "Installing custom CA certs...";
+              cp /usr/local/share/ca-certificates/custom/ca.crt /usr/local/share/ca-certificates/ca.crt;
+              update-ca-certificates;
+              echo "Starting main app...";
+              exec {{ .Values.controller.executable }} --endpoint=unix://{{ .Values.controller.endpointDirectory }}/csi.sock --url={{ .Values.controller.serviceUrl }} --api-key=$(API_KEY)
+{{- else }}
+          args :
+            - --endpoint=unix://{{ .Values.controller.endpointDirectory }}/csi.sock
+            - --url={{ .Values.controller.serviceUrl }}
+            - --api-key=$(API_KEY)
+{{- end }}
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.name" . }}
+                  key: apiKey
+          imagePullPolicy: "Always"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: {{ .Values.controller.endpointDirectory }}/
+{{- if .Values.controller.caCert }}
+            - name: ca-cert
+              mountPath: /usr/local/share/ca-certificates/custom
+              readOnly: true
+{{- end }}
+        - name: csi-provisioner
+          image: registry.k8s.io/sig-storage/csi-provisioner:{{ .Values.csiVersions.provisioner }}
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--default-fstype=ext4"
+            - "--v=5"
+          env:
+            - name: ADDRESS
+              value: {{ .Values.controller.endpointDirectory }}/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: {{ .Values.controller.endpointDirectory }}/
+        - name: csi-attacher
+          image: registry.k8s.io/sig-storage/csi-attacher:{{ .Values.csiVersions.attacher }}
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--v=5"
+            - "--reconcile-sync=30m"
+            - "--timeout=2m"
+          env:
+            - name: ADDRESS
+              value: {{ .Values.controller.endpointDirectory }}/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: {{ .Values.controller.endpointDirectory }}/
+        - name: csi-snapshotter
+          image: registry.k8s.io/sig-storage/csi-snapshotter:{{ .Values.csiVersions.snapshotter }}
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--v=5"
+          env:
+            - name: ADDRESS
+              value: {{ .Values.controller.endpointDirectory }}/csi.sock
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: socket-dir
+              mountPath: {{ .Values.controller.endpointDirectory }}/
+        - name: csi-resizer
+          image: registry.k8s.io/sig-storage/csi-resizer:{{ .Values.csiVersions.resizer }}
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--timeout=30s"
+            - "--v=5"
+            - "--handle-volume-inuse-error=false"
+          env:
+            - name: ADDRESS
+              value: {{ .Values.controller.endpointDirectory }}/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: {{ .Values.controller.endpointDirectory }}/
+      volumes:
+        - name: socket-dir
+          emptyDir: {}
+{{- if .Values.controller.caCert }}
+        - name: ca-cert
+          secret:
+            secretName: {{ include "chart.fullname" . }}-ca
+{{- end }}

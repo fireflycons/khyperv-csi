@@ -1,0 +1,61 @@
+apiVersion: storage.k8s.io/v1
+kind: CSIDriver
+metadata:
+  name: {{ .Values.driverName }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  attachRequired: true
+  podInfoOnMount: true
+
+---
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: hv-block-storage
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: {{ .Values.driverName }}
+allowVolumeExpansion: false
+
+---
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: hv-block-storage-retain
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+provisioner: {{ .Values.driverName }}
+reclaimPolicy: Retain
+allowVolumeExpansion: false
+
+---
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: hv-block-storage-xfs
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+provisioner: {{ .Values.driverName }}
+parameters:
+  fstype: xfs
+allowVolumeExpansion: false
+
+---
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: hv-block-storage-xfs-retain
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+provisioner: {{ .Values.driverName }}
+parameters:
+  fstype: xfs
+reclaimPolicy: Retain
+allowVolumeExpansion: false
