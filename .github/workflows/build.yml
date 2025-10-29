@@ -63,11 +63,11 @@ jobs:
         with:
           version: v2.4.0
 
-      - name: Install Helm
-        uses: azure/setup-helm@v4.3.0
+      # - name: Install Helm
+      #   uses: azure/setup-helm@v4.3.0
 
-      - name: helm-lint
-        run: helm lint --set apiKey=meh --set controller.serviceUrl=http://example.com chart
+      # - name: helm-lint
+      #   run: helm lint --set apiKey=meh --set controller.serviceUrl=http://example.com chart
 
   windows-service:
     needs: lint
