@@ -97,7 +97,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-service
-          path: $ARTIFACT
+          path: ${{ env.ARTIFACT }}
           retention-days: 1
 
   linux-csi-driver:
@@ -127,5 +127,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linunx-csi-driver
-          path: $ARTIFACT
+          path: ${{ env.ARTIFACT }}
           retention-days: 1
