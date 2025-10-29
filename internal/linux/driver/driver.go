@@ -184,6 +184,7 @@ func NewDriver(p *NewDriverParams) (*Driver, error) {
 		log:                    logEntry,
 		mounter:                newMounter(logEntry),
 		metadata:               md,
+		isController:           p.ApiKey != "",
 		hostID: func() string {
 			// This should not error because we already tested it during initialization
 			id, _ := md.Find(kvp.VM_ID_KEY)
@@ -195,6 +196,16 @@ func NewDriver(p *NewDriverParams) (*Driver, error) {
 
 // Run starts the CSI plugin by communication over the given endpoint
 func (d *Driver) Run(ctx context.Context) error {
+
+	identity := func() string {
+		if d.isController {
+			return "Controller"
+		}
+		return "Node driver"
+	}()
+
+	d.log.Infof("%s starting", identity)
+
 	u, err := url.Parse(d.endpoint)
 	if err != nil {
 		return fmt.Errorf("unable to parse address: %w", err)
@@ -227,6 +238,7 @@ func (d *Driver) Run(ctx context.Context) error {
 
 	// log response errors for better observability
 	errHandler := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		//nolint:govet // intentional redeclaration of err
 		resp, err := handler(ctx, req)
 		if err != nil {
 			d.log.WithError(err).WithField("method", info.FullMethod).Error("method failed")
@@ -243,6 +255,7 @@ func (d *Driver) Run(ctx context.Context) error {
 			mux := http.NewServeMux()
 			mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 
+				//nolint:govet // intentional redeclaration of err
 				err := d.healthChecker.Check(r.Context())
 				if err != nil {
 					d.log.WithError(err).Error("executing health check")
@@ -275,12 +288,12 @@ func (d *Driver) Run(ctx context.Context) error {
 		eg.Go(func() error {
 			const shutdownTimeout = 10 * time.Second
 			<-ctx.Done()
-			//nolint:govet // intentional redeclaration of ctx. Previous usage is finished with.
-			ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+			ctx2, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 			defer cancel()
-			return d.httpSrv.Shutdown(ctx)
+			return d.httpSrv.Shutdown(ctx2)
 		})
 		eg.Go(func() error {
+			//nolint:govet // intentional redeclaration of err
 			err := d.httpSrv.ListenAndServe()
 			if err == http.ErrServerClosed {
 				return nil
@@ -300,5 +313,13 @@ func (d *Driver) Run(ctx context.Context) error {
 		return d.srv.Serve(grpcListener)
 	})
 
-	return eg.Wait()
+	err = eg.Wait()
+
+	if err == nil {
+		d.log.Infof("%s stopped", identity)
+	} else {
+		d.log.WithError(err).Errorf("%s stopped with error", identity)
+	}
+
+	return err
 }

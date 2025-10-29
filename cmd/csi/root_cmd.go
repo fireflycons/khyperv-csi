@@ -44,6 +44,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&urlFlag, "url", "u", "", "URL of khypervprovider Windows Service")
 	rootCmd.Flags().StringVarP(&driverNameFlag, "driver-name", "n", driver.DefaultDriverName, "Name for the driver")
 	rootCmd.Flags().StringVarP(&debugAddrFlag, "debug-addr", "d", "", "Address to serve the HTTP debug server on")
+	rootCmd.Flags().StringVarP(&apiKeyFlag, "api-key", "k", "", "API key to access Hyper-V service backend")
 }
 
 func runDriver(*cobra.Command, []string) {
