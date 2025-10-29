@@ -63,10 +63,11 @@ jobs:
         with:
           version: v2.4.0
 
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+
       - name: helm-lint
-        uses: WyriHaximus/github-action-helm3@v3
-        with:
-          exec: helm lint --set apiKey=meh --set controller.serviceUrl=http://example.com chart
+        run: helm lint --set apiKey=meh --set controller.serviceUrl=http://example.com chart
 
   windows-service:
     needs: lint
@@ -143,3 +144,6 @@ jobs:
 
       - name: check-artifacts
         run: ls -l
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
