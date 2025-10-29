@@ -137,24 +137,22 @@ jobs:
     - linux-csi-driver
     runs-on: ubuntu-latest
     steps:
-      - name: 'Download Artifact'
-        uses: actions/download-artifact@v4
-        with:
-          path: ./
-
-      - name: check-artifacts
-        run: ls -lR
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: build-image
+      - name: 'Download Artifacts'
+        uses: actions/download-artifact@v4
+        with:
+          path: ./
+
+      - name: Build Image
         run: |
+          ls -lR
           driver=$(basename "$(find ./linux-csi-driver -type f -name '*')")
-          cp /linux-csi-driver/$driver $driver
+          cp ./linux-csi-driver/$driver $driver
           chmod +x $driver
           docker build -t $driver --build-arg EXECUTABLE=$driver -f docker/Dockerfile .
 
