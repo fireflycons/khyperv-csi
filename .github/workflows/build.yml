@@ -63,6 +63,11 @@ jobs:
         with:
           version: v2.4.0
 
+      - name: helm-lint
+        uses: WyriHaximus/github-action-helm3@v3
+        with:
+          exec: helm lint --set apiKey=meh --set controller.serviceUrl=http://example.com chart
+
   windows-service:
     needs: lint
     runs-on: windows-2022
@@ -88,6 +93,13 @@ jobs:
           make executable
         shell: cmd
 
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-service
+          path: $ARTIFACT
+          retention-days: 1
+
   linux-csi-driver:
     needs: lint
     runs-on: ubuntu-latest
@@ -111,3 +123,9 @@ jobs:
         run: |
           make executable
 
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linunx-csi-driver
+          path: $ARTIFACT
+          retention-days: 1

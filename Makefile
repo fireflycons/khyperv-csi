@@ -124,9 +124,19 @@ endif
 
 $(BIN_TARGET): $(SWAGGER) $(SOURCE_FILES) $(LOGGING_FILES)
 	$(CGO) go build -o $(BIN_TARGET) -ldflags "-s -w" $(MAIN_DIR)
+ifeq ($(GITHUB_ACTIONS),true)
+	echo "ARTIFACT=$(BIN_TARGET)" >> $$GITHUB_ENV
+endif
 
 .PHONY: executable
 executable: $(MODULE_TARGET) $(BIN_TARGET) ## Build Executable (Hyper-V service on Windows, Driver on Linux)
+
+##@ Docker (Linux only)
+ifneq ($(detected_OS),Windows)
+
+image: executable ## Make docker image
+	docker build -t $(BIN_TARGET) --build-arg EXECUTABLE=$(BIN_TARGET) -f docker/Dockerfile .
+endif
 
 
 ##@ Testing
