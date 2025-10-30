@@ -1,15 +1,17 @@
-VERSION = 1.0.0
+VERSION ?= 0.0.1
 
 ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
     detected_OS := Windows
+	POWERSHELL = C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe  -ExecutionPolicy Unrestricted -NoProfile
+	MODULE = $(shell $(POWERSHELL) -Command "(Get-Content .\go.mod | Select-String 'module') -split ' ' | Select-Object -Last 1")
+	BUILD_DATE = $(shell $(POWERSHELL) -Command "(Get-Date).ToUniversalTime().ToString('ddd MMM dd HH:mm:ss UTC yyyy')")
 	MOCKERY = mockery.exe
 	SWAGGER = swagger
 	SWAGDIR = internal/windows
 	SWAGGERFILES = $(SWAGDIR)/controller/routes.go internal/models/rest/*.go internal/models/get-vhd.go
-	POWERSHELL = C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
-	SOURCE_FILES_RAW = $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -File zbuild/get-windowsdeps.ps1)
+	SOURCE_FILES_RAW = $(shell $(POWERSHELL) -File zbuild/get-windowsdeps.ps1)
 	SOURCE_FILES = $(shell echo | set /p="$(SOURCE_FILES_RAW)")
-	LOGGING_FILES_RAW = $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted  -NoProfile -File zbuild/get-loggingdeps.ps1)
+	LOGGING_FILES_RAW = $(shell $(POWERSHELL) -File zbuild/get-loggingdeps.ps1)
 	LOGGING_FILES = $(shell echo | set /p="$(LOGGING_FILES_RAW)")
 	LINT_TARGETS = powershell
 	MOCK_TARGETS = internal/windows/powershell/runner.go
@@ -17,9 +19,11 @@ ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
 	BIN_TARGET = khypervprovider.exe
 	MAIN_DIR = ./cmd/khypervprovider
 	CGO =
-	MODULE_TARGET = powershell
+	PSMODULE_TARGET = powershell
 else
     detected_OS := $(shell uname)  # same as "uname -s"
+	MODULE=$(shell grep -oP 'module\s+\K[\w\/\.]+' go.mod)
+	BUILD_DATE = $(shell date -u)
 	MOCKERY = mockery
 	SWAGGER =
 	SOURCE_FILES = $(shell find ./cmd/csi ./internal/common ./internal/constants ./internal/linux ./internal/models -type f -name '*.go' -print )
@@ -30,8 +34,10 @@ else
 	BIN_TARGET = hyperv-csi-plugin
 	MAIN_DIR = ./cmd/csi
 	CGO = CGO_ENABLED=0
-	MODULE_TARGET =
+	PSMODULE_TARGET =
+
 endif
+COMMIT_HASH = $(shell git rev-parse --short HEAD)
 
 .PHONY: help
 
@@ -110,10 +116,10 @@ swagger: $(SWAGDIR)/swaggerui/docs.go ## Build swagger UI components.
 # ------------ POWERSHELL -------------
 ifeq ($(detected_OS),Windows)
 
-PS_FILES := $(shell $(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -Command 'Get-ChildItem -Recurse -Filter *.ps* -Path powershell-modules | ForEach-Object { Write-Host -NoNewLine $$_.FullName ""}')
+PS_FILES := $(shell $(POWERSHELL) -Command 'Get-ChildItem -Recurse -Filter *.ps* -Path powershell-modules | ForEach-Object { Write-Host -NoNewLine $$_.FullName ""}')
 
 cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg: $(PS_FILES)
-	@$(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -File powershell-modules/build-module.ps1 -Version $(VERSION) -Target "$@"
+	@$(POWERSHELL) -File powershell-modules/build-module.ps1 -Version $(VERSION) -Target "$@"
 
 .PHONY: powershell
 powershell: cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg ## (Windows) Build khyperv-csi PowerShell Module
@@ -123,13 +129,13 @@ endif
 # ------------ EXECUTABLE -------------
 
 $(BIN_TARGET): $(SWAGGER) $(SOURCE_FILES) $(LOGGING_FILES)
-	$(CGO) go build -o $(BIN_TARGET) -ldflags "-s -w" $(MAIN_DIR)
+	$(CGO) go build -o $(BIN_TARGET) -ldflags "-s -w -X $(MODULE)/internal/common.Version=$(VERSION) -X $(MODULE)/internal/common.CommitHash=$(COMMIT_HASH) -X '$(MODULE)/internal/common.BuildDate=$(BUILD_DATE)'" $(MAIN_DIR)
 ifeq ($(GITHUB_ACTIONS),true)
 	echo "ARTIFACT=$(BIN_TARGET)" >> $$GITHUB_ENV
 endif
 
 .PHONY: executable
-executable: $(MODULE_TARGET) $(BIN_TARGET) ## Build Executable (Hyper-V service on Windows, Driver on Linux)
+executable: $(PSMODULE_TARGET) $(BIN_TARGET) ## Build Executable (Hyper-V service on Windows, Driver on Linux)
 
 ##@ Docker (Linux only)
 ifneq ($(detected_OS),Windows)
@@ -146,7 +152,7 @@ ifeq ($(detected_OS),Windows)
 
 .PHONY: install-module
 install-module: powershell ## (Windows) Install the powershell module as current user (for tests)
-	@$(POWERSHELL) -ExecutionPolicy Unrestricted -NoProfile -NonInteractive -File cmd\khypervprovider\psmodule\install-module.ps1 -Package cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg -CurrentUser
+	@$(POWERSHELL) -NonInteractive -File cmd\khypervprovider\psmodule\install-module.ps1 -Package cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg -CurrentUser
 
 endif
 
