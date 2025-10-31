@@ -51,10 +51,6 @@ const (
 	defaultVolumesPageSize = 50
 )
 
-var (
-	version = "0.0.1-debug"
-)
-
 // Driver implements the following CSI interfaces:
 //
 //	csi.IdentityServer

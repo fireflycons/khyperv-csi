@@ -23,6 +23,7 @@ import (
 	"context"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/fireflycons/hypervcsi/internal/common"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/sirupsen/logrus"
 )
@@ -31,7 +32,7 @@ import (
 func (d *Driver) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
 	resp := &csi.GetPluginInfoResponse{
 		Name:          d.name,
-		VendorVersion: version,
+		VendorVersion: common.Version,
 	}
 
 	d.log.WithFields(logrus.Fields{
