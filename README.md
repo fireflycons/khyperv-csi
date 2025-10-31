@@ -8,11 +8,11 @@ INCOMPLETE: Work in progress
 | Kubernetes CSI Workload | :construction_worker: |
 | Helm Chart              | :x:                   |
 
-This provides a CSI for mounting Hyper-V virtual hard disks as persistent volumes for Kubernetes clusters running on a single Hyper-V server.
+This provides a CSI for mounting Hyper-V virtual hard disks as persistent volumes for Kubernetes clusters running on a single Hyper-V server. This includes the Hyper-V service running on your workstation/laptop if you have it. You do not require a dedicated Windows Server.
 
 It comprises of the following components
 
-* A Windows service that is installed on the Hyper-V server. This provides a REST interface to the disk subsystem that is utilised by the in-cluster provider workload.
+* A Windows service that is installed on the Hyper-V server. This provides a REST interface to the disk subsystem that is utilised by the in-cluster provider workload. This is comprised of a Go wrapper round a PowerShell module that does the interaction with the disk subsystem.
 * An in-cluster CSI provisioner which calls the REST service to provision and mount VHD disks.
 
 ## Security
@@ -35,7 +35,7 @@ It comprises of the following components
 
     * Rebuild the cluster completely on compatible VMs.
     * Deploy new nodes that do support the KVP service, migrate your workloads there and delete the old nodes.
-    * See if it is possible to install the missing services for your kernel version and distro.
+    * See if it is possible to install the missing services for your kernel version and distro. Your favourite AI LLM can probably help with this.
 
 ## Installation
 

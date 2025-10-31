@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/fireflycons/hypervcsi/internal/constants"
+	"github.com/fireflycons/hypervcsi/internal/models"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
 	"github.com/fireflycons/hypervcsi/internal/windows/powershell"
 	"github.com/fireflycons/hypervcsi/internal/windows/vhd"
@@ -18,12 +19,33 @@ import (
 // ControllerServer implements the backend in Hyper-V land
 // to the ControllerServer running in-cluster
 type ControllerServer interface {
+
+	/*
+		API methods
+	*/
+	CreateVolume(name string, size int64) (*rest.GetVolumeResponse, error)
+	DeleteVolume(volId string) error
+	GetCapacity() (*rest.GetCapacityResponse, error)
+	ListVolumes(maxEntries int32, nextToken string) (*models.ListVHDResponse, error)
+	GetVolume(name string) (*rest.GetVolumeResponse, error)
+	ListVms() (*rest.ListVMResponse, error)
+	GetVm(nodeID string) (*rest.GetVMResponse, error)
+	PublishVolume(volumeId, nodeId string) error
+	UnpublishVolume(volumeId, nodeId string) error
+
+	/*
+		GIN routes
+	*/
 	HandleCreateVolume(*gin.Context)
+	HandleGetVolume(*gin.Context)
 	HandleDeleteVolume(*gin.Context)
 	HandleListVolumes(*gin.Context)
 	HandleGetCapacity(*gin.Context)
 	HandlePublishVolume(*gin.Context)
 	HandleUnpublishVolume(*gin.Context)
+	HandleHealthCheck(*gin.Context)
+	HandleListVMs(*gin.Context)
+	HandleGetVM(*gin.Context)
 
 	Logger() *logrus.Logger
 	Close()

@@ -1,0 +1,83 @@
+name: Lint and Test
+on: [push, pull_request]
+jobs:
+  precheck:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # so we can diff against previous commit
+
+      - id: check
+        run: zbuild/workflow/precheck.sh
+
+  lint:
+    needs: precheck
+    if: ${{ needs.precheck.outputs.skip != 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.1'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.4.0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+
+      - name: helm-lint
+        run: helm lint --set apiKey=meh --set controller.serviceUrl=http://example.com chart
+
+  windows-service:
+    needs: lint
+    runs-on: windows-2022
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.1'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Test
+        run: make test
+        shell: cmd
+
+  linux-csi-driver:
+    needs: lint
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.1'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Test
+        run: make test
+

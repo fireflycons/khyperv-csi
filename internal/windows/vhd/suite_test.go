@@ -15,7 +15,7 @@ import (
 	"testing"
 
 	"github.com/fireflycons/hypervcsi/internal/constants"
-	"github.com/fireflycons/hypervcsi/internal/models"
+	"github.com/fireflycons/hypervcsi/internal/models/rest"
 	"github.com/fireflycons/hypervcsi/internal/windows/powershell"
 	"github.com/fireflycons/hypervcsi/internal/windows/win32"
 	"github.com/google/uuid"
@@ -32,7 +32,7 @@ type VHDTestSuite struct {
 	suite.Suite
 	pvStore string
 	vmStore string
-	vm      *models.GetVMResponse
+	vm      *rest.GetVMResponse
 	runner  powershell.Runner
 	logger  powershell.LogAdapter
 }
@@ -204,7 +204,7 @@ func (s *VHDTestSuite) createTestDisks() {
 
 func (s *VHDTestSuite) setupTestVM() {
 
-	vm := &models.GetVMResponse{}
+	vm := &rest.GetVMResponse{}
 
 	_, err := executeWithReturn(
 		s.runner,

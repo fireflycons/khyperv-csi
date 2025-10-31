@@ -23,10 +23,13 @@ const (
 type Client interface {
 
 	// CreateVolume creates a new VHD with the given name and size
-	CreateVolume(ctx context.Context, name string, sizeBytes int32) (*rest.CreateVolumeResponse, error)
+	CreateVolume(ctx context.Context, name string, sizeBytes int64) (*rest.GetVolumeResponse, error)
 
 	// DeleteVolume deletes a VHD with the given ID
 	DeleteVolume(ctx context.Context, volumeId string) error
+
+	// GetVolume retrieves a VHD with the given ID
+	GetVolume(ctx context.Context, volumeId string) (*rest.GetVolumeResponse, error)
 
 	// ListVolumes returns a list of provisioned VHDs
 	ListVolumes(ctx context.Context, maxEntries int, nextToken string) (*rest.ListVolumesResponse, error)
@@ -39,19 +42,46 @@ type Client interface {
 
 	// UnpublishVolume dismounts a volume from a node
 	UnpublishVolume(ctx context.Context, volumeId, nodeId string) error
+
+	// ListVms returns a list of all VMs defined in the Hyper-V server
+	ListVms(ctx context.Context) (*rest.ListVMResponse, error)
+
+	// GetVm gets the VM with the given ID
+	GetVm(ctx context.Context, nodeId string) (*rest.GetVMResponse, error)
+
+	// HealthCheck performs a health check on the Hyper-V REST service
+	HealthCheck(ctx context.Context) (*rest.HealthyResponse, error)
 }
 
 type noResult struct{}
 
 type client struct {
-	client httpClient
-	addr   *url.URL
+	httpClient httpClient
+	addr       *url.URL
+	apiKey     string
+}
+
+var _ Client = (*client)(nil)
+
+func NewClient(baseURL string, httpClient httpClient, apiKey string) (*client, error) {
+
+	parsedURL, err := url.Parse(baseURL)
+
+	if err != nil {
+		return nil, fmt.Errorf("new hyperv client: cannot parse base URL: %w", err)
+	}
+
+	return &client{
+		httpClient: httpClient,
+		addr:       parsedURL,
+		apiKey:     apiKey,
+	}, nil
 }
 
 var errNegativeValue = errors.New("argument value cannot be negative")
 
 // CreateVolume creates a new VHD with the given name and size
-func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) (*rest.CreateVolumeResponse, error) {
+func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) (*rest.GetVolumeResponse, error) {
 
 	if sizeBytes < 0 {
 		return nil, errNegativeValue
@@ -64,17 +94,7 @@ func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) 
 		}.Encode(),
 	})
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, "POST", target.String(), http.NoBody)
-
-	if err != nil {
-		return nil, fmt.Errorf("create volume: cannot create request: %w", err)
-	}
-
-	response := &rest.CreateVolumeResponse{}
-	return executeRequest(c, "create volume", req, response)
+	return apiCall[*rest.GetVolumeResponse](ctx, c, "create volume", target, "POST", c.apiKey)
 }
 
 // DeleteVolume deletes a VHD with the given ID
@@ -84,17 +104,17 @@ func (c client) DeleteVolume(ctx context.Context, volumeId string) error {
 		Path: "volume/" + volumeId,
 	})
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, "DELETE", target.String(), http.NoBody)
-
-	if err != nil {
-		return fmt.Errorf("delete volume: cannot create request: %w", err)
-	}
-
-	_, err = executeRequest(c, "delete volume", req, &noResult{})
+	_, err := apiCall[*noResult](ctx, c, "delete volume", target, "DELETE", c.apiKey)
 	return err
+}
+
+func (c client) GetVolume(ctx context.Context, volumeId string) (*rest.GetVolumeResponse, error) {
+
+	target := c.addr.ResolveReference(&url.URL{
+		Path: "volume/" + volumeId,
+	})
+
+	return apiCall[*rest.GetVolumeResponse](ctx, c, "get volume", target, "GET", c.apiKey)
 }
 
 // ListVolumes returns a list of provisioned VHDs
@@ -112,17 +132,7 @@ func (c client) ListVolumes(ctx context.Context, maxEntries int, nextToken strin
 		}.Encode(),
 	})
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, "GET", target.String(), http.NoBody)
-
-	if err != nil {
-		return nil, fmt.Errorf("list volumes: cannot create request: %w", err)
-	}
-
-	response := &rest.ListVolumesResponse{}
-	return executeRequest(c, "list volumes", req, response)
+	return apiCall[*rest.ListVolumesResponse](ctx, c, "list volumes", target, "GET", c.apiKey)
 }
 
 // GetCapacity returns the free space remaining for provisioning new VHDs
@@ -132,18 +142,31 @@ func (c client) GetCapacity(ctx context.Context) (*rest.GetCapacityResponse, err
 		Path: "capacity",
 	})
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
+	return apiCall[*rest.GetCapacityResponse](ctx, c, "get capacity", target, "GET", c.apiKey)
+}
 
-	req, err := http.NewRequestWithContext(reqCtx, "GET", target.String(), http.NoBody)
+// ListVms returns a list of all VMs defined in the Hyper-V server
+func (c client) ListVms(ctx context.Context) (*rest.ListVMResponse, error) {
 
-	if err != nil {
-		return nil, fmt.Errorf("get capacity: cannot create request: %w", err)
-	}
+	target := c.addr.ResolveReference(&url.URL{
+		Path: "vms",
+	})
 
-	response := &rest.GetCapacityResponse{}
+	return apiCall[*rest.ListVMResponse](ctx, c, "list vms", target, "GET", c.apiKey)
+}
 
-	return executeRequest(c, "get capacity", req, response)
+// GetVm gets the VM with the given ID
+func (c client) GetVm(ctx context.Context, nodeId string) (*rest.GetVMResponse, error) {
+
+		target := c.addr.ResolveReference(&url.URL{
+		Path: "vms",
+		RawQuery: url.Values{
+			"id": {nodeId},
+		}.Encode(),
+	})
+
+	return apiCall[*rest.GetVMResponse](ctx, c, "get vm", target, "GET", c.apiKey)
+
 }
 
 type publishOp int
@@ -156,16 +179,25 @@ const (
 // PublishVolume mounts a volume to a node
 func (c client) PublishVolume(ctx context.Context, volumeId, nodeId string) error {
 
-	return c.publsher(ctx, volumeId, nodeId, publish)
+	return c.publisher(ctx, volumeId, nodeId, publish)
 }
 
 // UnpublishVolume dismounts a volume from a node
 func (c client) UnpublishVolume(ctx context.Context, volumeId, nodeId string) error {
 
-	return c.publsher(ctx, volumeId, nodeId, unpublish)
+	return c.publisher(ctx, volumeId, nodeId, unpublish)
 }
 
-func (c client) publsher(ctx context.Context, volumeId, nodeId string, op publishOp) error {
+func (c client) HealthCheck(ctx context.Context) (*rest.HealthyResponse, error) {
+
+	target := c.addr.ResolveReference(&url.URL{
+		Path: "healthz",
+	})
+
+	return apiCall[*rest.HealthyResponse](ctx, c, "health check", target, "GET", c.apiKey)
+}
+
+func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publishOp) error {
 
 	method, opName := func() (string, string) {
 		if op == publish {
@@ -178,40 +210,49 @@ func (c client) publsher(ctx context.Context, volumeId, nodeId string, op publis
 		Path: "attachment/" + nodeId + "/volume/" + volumeId,
 	})
 
-	reqCtx, cancel := context.WithTimeout(ctx, maxOperationWaitTime)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(reqCtx, method, target.String(), http.NoBody)
-
-	if err != nil {
-		return fmt.Errorf("%s volume: cannot create request: %w", opName, err)
-	}
-
-	_, err = executeRequest(c, opName+" volume", req, &noResult{})
+	_, err := apiCall[*noResult](ctx, c, opName+" volume", target, method, c.apiKey)
 	return err
-
 }
 
-// executeRequest handles the HTTP plunmbing and associated errors, resturning any response.
-func executeRequest[T *Q, Q any](c client, operation string, request *http.Request, response T) (T, error) {
+// apiCall prepares and executes an API call to the Hyper-V REST service.
+// It handles timeouts, request creation, and response parsing.
+func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, target *url.URL, method, apiKey string) (T, error) {
 
-	resp, err := c.client.Do(request)
+	var requestCtx = ctx
+
+	if ctx == context.Background() || ctx == context.TODO() {
+		var cancel context.CancelFunc
+		requestCtx, cancel = context.WithTimeout(ctx, maxOperationWaitTime)
+		defer cancel()
+	}
+
+	request, err := http.NewRequestWithContext(requestCtx, method, target.String(), http.NoBody)
+
+	if err != nil {
+		return nil, fmt.Errorf("%s: cannot create request: %w", operation, err)
+	}
+
+	request.Header.Set("x-api-key", apiKey)
+
+	httpResponse, err := c.httpClient.Do(request)
 
 	if err != nil {
 		return nil, fmt.Errorf("%s: error making request: %w", operation, err)
 	}
 
-	bodyData, err := io.ReadAll(resp.Body)
+	var bodyData []byte
 
-	if resp.Body != nil {
-		_ = resp.Body.Close()
+	if httpResponse.Body != nil {
+
+		bodyData, err = io.ReadAll(httpResponse.Body)
+		_ = httpResponse.Body.Close()
+
+		if err != nil {
+			return nil, fmt.Errorf("%s: error reading result: %w", operation, err)
+		}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("%s: error reading result: %w", operation, err)
-	}
-
-	if resp.StatusCode >= http.StatusBadRequest {
+	if httpResponse.StatusCode >= http.StatusBadRequest {
 
 		errorObj := &rest.Error{}
 
@@ -222,12 +263,15 @@ func executeRequest[T *Q, Q any](c client, operation string, request *http.Reque
 		return nil, errorObj
 	}
 
+	var q Q
+	apiResponse := &q
+
 	if len(bodyData) > 0 {
 		// A response is expected
-		if err := json.Unmarshal(bodyData, response); err != nil {
+		if err := json.Unmarshal(bodyData, apiResponse); err != nil {
 			return nil, fmt.Errorf("%s: error unmarshaling response data: %w", operation, err)
 		}
 	}
 
-	return response, nil
+	return apiResponse, nil
 }

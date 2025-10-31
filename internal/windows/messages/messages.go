@@ -12,11 +12,22 @@ const (
 
 const (
 	CONTROLLER_CREATE_VOLUME          = "create volume called"
+	CONTROLLER_CREATE_VOLUME_FAILED   = "unable to create volume"
+	CONTROLLER_GET_VOLUME             = "get volume called"
+	CONTROLLER_GET_VOLUME_OK          = "volume was found"
+	CONTROLLER_GET_VOLUME_FAILED      = "unable to get volume"
 	CONTROLLER_VOLUME_EXISTS          = "volume exists with different size"
 	CONTROLLER_VOLUME_ALREADY_CREATED = "volume already created"
 	CONTROLLER_VOLUME_CREATED         = "volume was created"
 	CONTROLLER_STORAGE_FULL           = "storage space full"
-	CONTROLLER_CREATE_VOLUME_FAILED   = "unable to create volume"
+
+	CONTROLLER_LIST_VMS        = "list VMs called"
+	CONTROLLER_LIST_VMS_FAILED = "list VMs failed"
+	CONTROLLER_VMS_LISTED      = "VMs were listed"
+
+	CONTROLLER_GET_VM        = "get VM called"
+	CONTROLLER_GET_VM_FAILED = "get VM failed"
+	CONTROLLER_GOT_VM        = "got VM"
 
 	CONTROLLER_VOLUME_DELETE        = "delete volume called"
 	CONTROLLER_VOLUME_DELETED       = "volume was deleted"

@@ -14,11 +14,11 @@ import (
 
 	"github.com/fireflycons/hypervcsi/cmd/khypervprovider/psmodule"
 	"github.com/fireflycons/hypervcsi/internal/constants"
+	"github.com/fireflycons/hypervcsi/internal/logging/wineventlog"
 	"github.com/fireflycons/hypervcsi/internal/windows/win32"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/windows/svc"
-	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
@@ -194,7 +194,7 @@ func doInstall() error { //nolint:gocyclo // not worth splitting up
 		_ = theService.Close()
 	}()
 
-	err = eventlog.InstallAsEventCreate(constants.ServiceName, eventlog.Error|eventlog.Warning|eventlog.Info)
+	err = wineventlog.RegisterEventSource()
 	if err != nil {
 		_ = theService.Delete()
 		return fmt.Errorf("cannot set up event log: %w: service not installed", err)

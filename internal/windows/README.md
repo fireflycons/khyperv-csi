@@ -8,7 +8,10 @@ Performs the low-level operations to manage VHDs:
 |---------------|-----------------------------------------------------|-------------|--------------------------------------------------------|
 | `Create`      | Provisions a VHD                                    | `POST`      | `http://backend/volume/:name?size=n`                   |
 | `Delete`      | Deletes a VHD                                       | `DELETE`    | `http://backend/volume/:volid`                         |
+| `Get`         | Gets a VHD                                          | `GET`       | `http://backend/volume/:volid`                         |
 | `List`        | Lists available VHDs (with pagination)              | `GET`       | `http://backend/volumes?maxEntries=n&nextToken=n`      |
 | `Attach`      | Attach a VHD to a VM                                | `POST`      | `http://backend/attachment/node/:nodeid/volume/:volid` |
 | `Detach`      | Remove a VHD from a VM                              | `DELETE`    | `http://backend/attachment/node/:nodeid/volume/:volid` |
 | `GetCapacity` | Return available storage space for VHDs on the host | `GET`       | `http://backend/capacity`                              |
+| `ListVms`     | Return all VMs on the host                          | `GET`       | `http://backend/vms`                                   |
+| `GetVm`       | Return a VM by ID                                   | `GET`       | `http://backend/vm/:id`                                |

@@ -9,10 +9,8 @@ package controller
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 
-	"github.com/fireflycons/hypervcsi/internal/constants"
+	"github.com/fireflycons/hypervcsi/internal/common"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
 	"github.com/fireflycons/hypervcsi/internal/windows/messages"
 	"github.com/fireflycons/hypervcsi/internal/windows/vhd"
@@ -20,11 +18,11 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-func (s *controllerServer) CreateVolume(name string, size int64) (*rest.CreateVolumeResponse, error) {
+func (s *controllerServer) CreateVolume(name string, size int64) (*rest.GetVolumeResponse, error) {
 
 	log := s.log.WithFields(logrus.Fields{
 		"volume_name":  name,
-		"storage_size": formatBytes(size),
+		"storage_size": common.FormatBytes(size),
 		"method":       "create_volume",
 	})
 	log.Info(messages.CONTROLLER_CREATE_VOLUME)
@@ -49,7 +47,8 @@ func (s *controllerServer) CreateVolume(name string, size int64) (*rest.CreateVo
 
 		log.Info(messages.CONTROLLER_VOLUME_ALREADY_CREATED)
 
-		return &rest.CreateVolumeResponse{
+		return &rest.GetVolumeResponse{
+			Name: vol.Name,
 			ID:   vol.DiskIdentifier,
 			Size: vol.Size,
 		}, nil
@@ -74,7 +73,8 @@ func (s *controllerServer) CreateVolume(name string, size int64) (*rest.CreateVo
 		return nil, rest.NewError(codes.Internal, err.Error())
 	}
 
-	resp := &rest.CreateVolumeResponse{
+	resp := &rest.GetVolumeResponse{
+		Name: vol.Name,
 		ID:   vol.DiskIdentifier,
 		Size: vol.Size,
 	}
@@ -82,30 +82,4 @@ func (s *controllerServer) CreateVolume(name string, size int64) (*rest.CreateVo
 	log.WithField("response", resp).Info(messages.CONTROLLER_VOLUME_CREATED)
 
 	return resp, nil
-}
-
-func formatBytes(inputBytes int64) string {
-	output := float64(inputBytes)
-	unit := ""
-
-	switch {
-	case inputBytes >= constants.TiB:
-		output /= constants.TiB
-		unit = "Ti"
-	case inputBytes >= constants.GiB:
-		output /= constants.GiB
-		unit = "Gi"
-	case inputBytes >= constants.MiB:
-		output /= constants.MiB
-		unit = "Mi"
-	case inputBytes >= constants.KiB:
-		output /= constants.KiB
-		unit = "Ki"
-	case inputBytes == 0:
-		return "0"
-	}
-
-	result := strconv.FormatFloat(output, 'f', 1, 64)
-	result = strings.TrimSuffix(result, ".0")
-	return result + unit
 }

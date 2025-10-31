@@ -18,7 +18,7 @@ import (
 
 func (s *ClientTestSuite) TestExecute() {
 
-	expected := &rest.CreateVolumeResponse{
+	expected := &rest.GetVolumeResponse{
 		ID:   "id",
 		Size: 1,
 	}
@@ -28,14 +28,14 @@ func (s *ClientTestSuite) TestExecute() {
 			StatusCode: http.StatusCreated,
 			Body: &closeableBuffer{
 				buf: bytes.NewBuffer(
-					s.mustMarshalJSON(expected),
+					s.MustMarshalJSON(expected),
 				),
 			},
 		},
 		nil,
 	)
 
-	actual, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	actual, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
 
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)
@@ -55,7 +55,7 @@ func (s *ClientTestSuite) TestExecuteNoResult() {
 		nil,
 	)
 
-	actual, err := executeRequest(s.client, "test", s.mustNewRequest(), &noResult{})
+	actual, err := apiCall[*noResult](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
 
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)
@@ -65,17 +65,17 @@ func (s *ClientTestSuite) TestExecuteFailOnDo() {
 
 	underlyingError := errors.New("an error")
 
-	req := s.mustNewRequest()
+	req := s.mustRequestURL()
 
 	expected := &url.Error{
 		Op:  "GET",
-		URL: req.URL.String(),
+		URL: req.String(),
 		Err: underlyingError,
 	}
 
 	s.mockHttp.EXPECT().Do(mock.Anything).Return(nil, expected)
 
-	_, actual := executeRequest(s.client, "test", req, &rest.CreateVolumeResponse{})
+	_, actual := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", req, "GET", "key")
 	s.Require().Error(actual)
 	s.Require().Contains(actual.Error(), "error making request")
 	urlErr := &url.Error{}
@@ -95,14 +95,14 @@ func (s *ClientTestSuite) TestExecuteFailOnStatus() {
 			StatusCode: http.StatusInternalServerError,
 			Body: &closeableBuffer{
 				buf: bytes.NewBuffer(
-					s.mustMarshalJSON(expected),
+					s.MustMarshalJSON(expected),
 				),
 			},
 		},
 		nil,
 	)
 
-	_, actual := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	_, actual := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
 
 	s.Require().Error(actual)
 	restErr := &rest.Error{}
@@ -122,7 +122,7 @@ func (s *ClientTestSuite) TestExecuteFailUnmarshallingResponse() {
 		nil,
 	)
 
-	_, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	_, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
 
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "error unmarshaling response data")
@@ -140,7 +140,7 @@ func (s *ClientTestSuite) TestExecuteFailUnmashallingError() {
 		nil,
 	)
 
-	_, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	_, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
 
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "error unmarshaling error response")
@@ -156,9 +156,7 @@ func (s *ClientTestSuite) TestExecuteFailOnTimeout() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost/", http.NoBody)
-	s.Require().NoError(err)
-	_, err = executeRequest(s.client, "test", req, &rest.CreateVolumeResponse{})
+	_, err := apiCall[*rest.GetVolumeResponse](ctx, s.client, "test", s.mustRequestURL(), "GET", "key")
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "error making request: context deadline exceeded")
 }
@@ -185,7 +183,7 @@ func (s *ClientTestSuite) TestExecuteFailReadResponseBody() {
 		nil,
 	)
 
-	_, err := executeRequest(s.client, "test", s.mustNewRequest(), &rest.CreateVolumeResponse{})
+	_, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, errRead)
 	s.Require().Contains(err.Error(), "error reading result")

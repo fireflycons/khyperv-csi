@@ -25,7 +25,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Publish Volume",
                 "parameters": [
@@ -78,7 +78,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Unpublish Volume",
                 "parameters": [
@@ -133,7 +133,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Get storage capacity",
                 "parameters": [
@@ -167,6 +167,118 @@ const docTemplate = `{
                 }
             }
         },
+        "/healthz": {
+            "get": {
+                "description": "Checks the health of the service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Probe"
+                ],
+                "summary": "Check Health",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.HealthyResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/vm": {
+            "get": {
+                "description": "Gets a VM by node ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Virtual Machines"
+                ],
+                "summary": "Get Virtual Machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "nodeid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.GetVMResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/vms": {
+            "get": {
+                "description": "Lists all VMs on the Hyper-V server",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Virtual Machines"
+                ],
+                "summary": "List Virtual Machines",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ListVMResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/volume/{id}": {
             "delete": {
                 "description": "Delete a VHD",
@@ -177,7 +289,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Delete a VHD",
                 "parameters": [
@@ -222,6 +334,73 @@ const docTemplate = `{
             }
         },
         "/volume/{name}": {
+            "get": {
+                "description": "Get an existing VHD",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Disks"
+                ],
+                "summary": "Get an existing VHD",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Volume name or ID",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/rest.GetVolumeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid arguments",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Create a new VHD",
                 "consumes": [
@@ -231,7 +410,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "Create a new VHD",
                 "parameters": [
@@ -261,7 +440,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/rest.CreateVolumeResponse"
+                            "$ref": "#/definitions/rest.GetVolumeResponse"
                         }
                     },
                     "400": {
@@ -301,7 +480,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Controller"
+                    "Disks"
                 ],
                 "summary": "List volumes",
                 "parameters": [
@@ -380,19 +559,6 @@ const docTemplate = `{
                 }
             }
         },
-        "rest.CreateVolumeResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "description": "The GUID ID assigned to the volume by Hyper-V",
-                    "type": "string"
-                },
-                "size": {
-                    "description": "Actual size of the created volume.\nIf caller requests less than the minimum VHD size,\nthen this will be the minimum VHD size.",
-                    "type": "integer"
-                }
-            }
-        },
         "rest.Error": {
             "type": "object",
             "properties": {
@@ -416,6 +582,60 @@ const docTemplate = `{
                 "minimumVolumeSize": {
                     "description": "MinimumVolumeSize is the minimum size of a volume that can be provisioned.\nRequests for smaller volumes will result in a volume of this size being provisioned.",
                     "type": "integer"
+                }
+            }
+        },
+        "rest.GetVMResponse": {
+            "type": "object",
+            "properties": {
+                "Generation": {
+                    "type": "integer"
+                },
+                "Id": {
+                    "type": "string"
+                },
+                "Name": {
+                    "type": "string"
+                },
+                "Path": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.GetVolumeResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "The GUID ID assigned to the volume by Hyper-V",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "The name of the volume.",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "Actual size of the created volume.\nIf caller requests less than the minimum VHD size,\nthen this will be the minimum VHD size.",
+                    "type": "integer"
+                }
+            }
+        },
+        "rest.HealthyResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "description": "Status indicates the health status of the service",
+                    "type": "string"
+                }
+            }
+        },
+        "rest.ListVMResponse": {
+            "type": "object",
+            "properties": {
+                "vms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rest.GetVMResponse"
+                    }
                 }
             }
         },

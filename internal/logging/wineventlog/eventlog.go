@@ -7,13 +7,10 @@ import (
 	"fmt"
 	"syscall"
 
+	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
-)
-
-const (
-	_SOURCE = "khypervcsi"
 )
 
 type WinEventLogHook struct {
@@ -23,28 +20,25 @@ type WinEventLogHook struct {
 
 func New(isDebug bool) (*WinEventLogHook, error) {
 
-	wel := &WinEventLogHook{}
+	emptyHook := &WinEventLogHook{}
 
 	var el debug.Log
 
 	if isDebug {
-		el = debug.New(_SOURCE)
+		el = debug.New(constants.ServiceName)
+
 	} else {
 
-		err := eventlog.InstallAsEventCreate(
-			_SOURCE,
-			eventlog.Info|eventlog.Warning|eventlog.Error,
-		)
-		if err != nil {
-			// Already registered? (common case)
-			if !errors.Is(err, syscall.ERROR_ALREADY_EXISTS) {
-				return wel, fmt.Errorf("failed to register event source %q: %w", _SOURCE, err)
-			}
+		if err := RegisterEventSource(); err != nil {
+			return emptyHook, err
 		}
 
-		el, err = eventlog.Open(_SOURCE)
+		var err error
+
+		el, err = eventlog.Open(constants.ServiceName)
+
 		if err != nil {
-			return wel, err
+			return emptyHook, err
 		}
 	}
 
@@ -79,7 +73,7 @@ func (h *WinEventLogHook) Fire(e *logrus.Entry) error {
 
 func RegisterEventSource() error {
 	err := eventlog.InstallAsEventCreate(
-		_SOURCE,
+		constants.ServiceName,
 		eventlog.Info|eventlog.Warning|eventlog.Error,
 	)
 	if err != nil {
@@ -87,7 +81,7 @@ func RegisterEventSource() error {
 		if errors.Is(err, syscall.ERROR_ALREADY_EXISTS) {
 			return nil
 		}
-		return fmt.Errorf("failed to register event source %q: %w", _SOURCE, err)
+		return fmt.Errorf("failed to register event source %q: %w", constants.ServiceName, err)
 	}
 	return nil
 }
@@ -95,8 +89,8 @@ func RegisterEventSource() error {
 // UnregisterEventSource removes an event source from the Windows Event Log.
 // Call this during uninstall if needed.
 func UnregisterEventSource() error {
-	if err := eventlog.Remove(_SOURCE); err != nil {
-		return fmt.Errorf("failed to remove event source %q: %w", _SOURCE, err)
+	if err := eventlog.Remove(constants.ServiceName); err != nil {
+		return fmt.Errorf("failed to remove event source %q: %w", constants.ServiceName, err)
 	}
 	return nil
 }

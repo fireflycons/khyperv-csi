@@ -2,18 +2,16 @@ package hyperv
 
 import (
 	"bytes"
-	"context"
-	"encoding/json"
 	"io"
-	"net/http"
 	"net/url"
 	"testing"
 
+	"github.com/fireflycons/hypervcsi/internal/common"
 	"github.com/stretchr/testify/suite"
 )
 
 type ClientTestSuite struct {
-	suite.Suite
+	common.SuiteBase
 	mockHttp *mockhttpClient
 	client   client
 }
@@ -25,8 +23,8 @@ var (
 func (s *ClientTestSuite) BeforeTest(_, _ string) {
 	s.mockHttp = newMockhttpClient(s.T())
 	s.client = client{
-		client: s.mockHttp,
-		addr:   s.mustParseUrl("http://localhost/"),
+		httpClient: s.mockHttp,
+		addr:       s.mustParseUrl("http://localhost/"),
 	}
 }
 
@@ -54,14 +52,8 @@ func (s *ClientTestSuite) mustParseUrl(addr string) *url.URL {
 	return u
 }
 
-func (s *ClientTestSuite) mustMarshalJSON(data any) []byte {
-	b, err := json.Marshal(data)
-	s.Require().NoError(err, "cannot marshal JSON")
-	return b
-}
-
-func (s *ClientTestSuite) mustNewRequest() *http.Request {
-	req, err := http.NewRequestWithContext(context.Background(), "GET", "http://localhost/", http.NoBody)
-	s.Require().NoError(err, "mustNewRequest")
-	return req
+func (s *ClientTestSuite) mustRequestURL() *url.URL {
+	u, err := url.Parse("http://localhost/")
+	s.Require().NoError(err, "mustRequestURL")
+	return u
 }

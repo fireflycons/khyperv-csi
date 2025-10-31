@@ -13,7 +13,7 @@ import (
 func (s *ClientTestSuite) TestListVolume() {
 
 	expected := &rest.ListVolumesResponse{
-		Volumes: []models.GetVHDResponse{
+		Volumes: []*models.GetVHDResponse{
 			{
 				DiskIdentifier: "1",
 			},
@@ -28,7 +28,7 @@ func (s *ClientTestSuite) TestListVolume() {
 			StatusCode: http.StatusCreated,
 			Body: &closeableBuffer{
 				buf: bytes.NewBuffer(
-					s.mustMarshalJSON(expected),
+					s.MustMarshalJSON(expected),
 				),
 			},
 		},

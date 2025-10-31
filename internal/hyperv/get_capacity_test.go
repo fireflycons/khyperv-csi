@@ -22,7 +22,7 @@ func (s *ClientTestSuite) TestGetCapacity() {
 			StatusCode: http.StatusOK,
 			Body: &closeableBuffer{
 				buf: bytes.NewBuffer(
-					s.mustMarshalJSON(expected),
+					s.MustMarshalJSON(expected),
 				),
 			},
 		},

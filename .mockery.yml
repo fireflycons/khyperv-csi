@@ -1,6 +1,6 @@
 all: false
 dir: '{{.InterfaceDir}}'
-filename: mocks.go
+filename: mocks_test.go
 force-file-write: true
 formatter: goimports
 include-auto-generated: false
@@ -18,8 +18,17 @@ packages:
     config:
       dir: internal/external_mocks/mock_shell
       pkgName: mock_shell
+      filename: mocks.go
   github.com/fireflycons/hypervcsi/internal/hyperv:
     interfaces:
       httpClient: {}
+  github.com/fireflycons/hypervcsi/internal/linux/kvp:
+    interfaces:
+      MetadataService: {}
+  github.com/fireflycons/hypervcsi/internal/linux/driver:
+    interfaces:
+      Mounter: {}
+      AttachmentValidator: {}
     config:
-      filename: mocks_test.go
+      template-data:
+        boilerplate-file: internal/linux/mockery_boilerplate

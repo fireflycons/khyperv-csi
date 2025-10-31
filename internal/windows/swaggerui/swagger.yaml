@@ -17,18 +17,6 @@ definitions:
         description: Size in bytes of the disk
         type: integer
     type: object
-  rest.CreateVolumeResponse:
-    properties:
-      id:
-        description: The GUID ID assigned to the volume by Hyper-V
-        type: string
-      size:
-        description: |-
-          Actual size of the created volume.
-          If caller requests less than the minimum VHD size,
-          then this will be the minimum VHD size.
-        type: integer
-    type: object
   rest.Error:
     properties:
       code:
@@ -51,6 +39,45 @@ definitions:
           MinimumVolumeSize is the minimum size of a volume that can be provisioned.
           Requests for smaller volumes will result in a volume of this size being provisioned.
         type: integer
+    type: object
+  rest.GetVMResponse:
+    properties:
+      Generation:
+        type: integer
+      Id:
+        type: string
+      Name:
+        type: string
+      Path:
+        type: string
+    type: object
+  rest.GetVolumeResponse:
+    properties:
+      id:
+        description: The GUID ID assigned to the volume by Hyper-V
+        type: string
+      name:
+        description: The name of the volume.
+        type: string
+      size:
+        description: |-
+          Actual size of the created volume.
+          If caller requests less than the minimum VHD size,
+          then this will be the minimum VHD size.
+        type: integer
+    type: object
+  rest.HealthyResponse:
+    properties:
+      status:
+        description: Status indicates the health status of the service
+        type: string
+    type: object
+  rest.ListVMResponse:
+    properties:
+      vms:
+        items:
+          $ref: '#/definitions/rest.GetVMResponse'
+        type: array
     type: object
   rest.ListVolumesResponse:
     properties:
@@ -103,7 +130,7 @@ paths:
             $ref: '#/definitions/rest.Error'
       summary: Unpublish Volume
       tags:
-      - Controller
+      - Disks
     post:
       consumes:
       - application/json
@@ -139,7 +166,7 @@ paths:
             $ref: '#/definitions/rest.Error'
       summary: Publish Volume
       tags:
-      - Controller
+      - Disks
   /capacity:
     get:
       consumes:
@@ -169,7 +196,81 @@ paths:
             $ref: '#/definitions/rest.Error'
       summary: Get storage capacity
       tags:
-      - Controller
+      - Disks
+  /healthz:
+    get:
+      consumes:
+      - application/json
+      description: Checks the health of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.HealthyResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Check Health
+      tags:
+      - Probe
+  /vm:
+    get:
+      consumes:
+      - application/json
+      description: Gets a VM by node ID
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      - description: Node ID
+        in: path
+        name: nodeid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.GetVMResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Get Virtual Machine
+      tags:
+      - Virtual Machines
+  /vms:
+    get:
+      consumes:
+      - application/json
+      description: Lists all VMs on the Hyper-V server
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.ListVMResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: List Virtual Machines
+      tags:
+      - Virtual Machines
   /volume/{id}:
     delete:
       consumes:
@@ -205,8 +306,53 @@ paths:
             $ref: '#/definitions/rest.Error'
       summary: Delete a VHD
       tags:
-      - Controller
+      - Disks
   /volume/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Get an existing VHD
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      - description: Volume name or ID
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rest.GetVolumeResponse'
+        "400":
+          description: Invalid arguments
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Get an existing VHD
+      tags:
+      - Disks
     post:
       consumes:
       - application/json
@@ -233,7 +379,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/rest.CreateVolumeResponse'
+            $ref: '#/definitions/rest.GetVolumeResponse'
         "400":
           description: Invalid arguments
           schema:
@@ -252,7 +398,7 @@ paths:
             $ref: '#/definitions/rest.Error'
       summary: Create a new VHD
       tags:
-      - Controller
+      - Disks
   /volumes:
     get:
       consumes:
@@ -293,5 +439,5 @@ paths:
             $ref: '#/definitions/rest.Error'
       summary: List volumes
       tags:
-      - Controller
+      - Disks
 swagger: "2.0"
