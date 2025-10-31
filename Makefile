@@ -2,7 +2,7 @@ VERSION ?= 0.0.1
 
 ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
     detected_OS := Windows
-	POWERSHELL = C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe  -ExecutionPolicy Unrestricted -NoProfile
+	POWERSHELL = C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe  -ExecutionPolicy Unrestricted -NoProfile -NonInteractive
 	MODULE = $(shell $(POWERSHELL) -Command "(Get-Content .\go.mod | Select-String 'module') -split ' ' | Select-Object -Last 1")
 	BUILD_DATE = $(shell $(POWERSHELL) -Command "(Get-Date).ToUniversalTime().ToString('ddd MMM dd HH:mm:ss UTC yyyy')")
 	MOCKERY = mockery.exe
@@ -154,7 +154,7 @@ ifeq ($(detected_OS),Windows)
 
 .PHONY: install-module
 install-module: powershell ## (Windows) Install the powershell module as current user (for tests)
-	@$(POWERSHELL) -NonInteractive -File cmd\khypervprovider\psmodule\install-module.ps1 -Package cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg -CurrentUser
+	@$(POWERSHELL) -File cmd\khypervprovider\psmodule\install-module.ps1 -Package cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg -CurrentUser
 
 endif
 
