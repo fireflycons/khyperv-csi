@@ -1,2 +1,47 @@
-*.go text eol=lf
-*.sh text eol=lf
+# --- Line endings ---------------------------------------------------------
+
+# Default: use LF in repo, CRLF only on Windows checkout
+* text=auto eol=lf
+
+# --- Go source ------------------------------------------------------------
+*.go        text eol=lf
+
+# --- Shell scripts --------------------------------------------------------
+*.sh        text eol=lf
+*.bash      text eol=lf
+*.cmd       test eol=crlf
+
+# --- PowerShell scripts ---------------------------------------------------
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+*.psd1      text eol=crlf
+
+# --- YAML / Helm templates ------------------------------------------------
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.tpl       text eol=lf
+
+# --- Misc config files ----------------------------------------------------
+*.json      text eol=lf
+*.toml      text eol=lf
+*.md        text eol=lf
+*.txt       text eol=lf
+
+# --- Binary / non-text files ---------------------------------------------
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.gz        binary
+*.tar       binary
+*.tar.gz    binary
+*.tgz       binary
+*.exe       binary
+
+# --- Permissions: ensure scripts are executable ---------------------------
+*.sh        text eol=lf   diff   merge
+*.bash      text eol=lf   diff   merge
+*.ps1       text eol=crlf diff   merge
