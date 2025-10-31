@@ -1,4 +1,5 @@
 //go:build ignore
+
 //
 // Go generator to create module_embed.go
 
@@ -70,6 +71,6 @@ func main() {
 	case 1:
 		generate(nupkg[0])
 	default:
-		log.Fatalf("Multiple moddule packages found. Run 'make powershell'.")
+		log.Fatalf("Multiple module packages found. Run 'make powershell'.")
 	}
 }
