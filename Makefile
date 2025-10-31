@@ -119,7 +119,9 @@ ifeq ($(detected_OS),Windows)
 PS_FILES := $(shell $(POWERSHELL) -Command 'Get-ChildItem -Recurse -Filter *.ps* -Path powershell-modules | ForEach-Object { Write-Host -NoNewLine $$_.FullName ""}')
 
 cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg: $(PS_FILES)
+	@$(POWERSHELL) -Command "Remove-Item -Force cmd\khypervprovider\psmodule\*.nupkg"
 	@$(POWERSHELL) -File powershell-modules/build-module.ps1 -Version $(VERSION) -Target "$@"
+	@go generate ./cmd/khypervprovider/psmodule
 
 .PHONY: powershell
 powershell: cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg ## (Windows) Build khyperv-csi PowerShell Module

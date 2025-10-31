@@ -1,4 +1,5 @@
 //go:build windows
+//go:generate go run embed-gen.go
 
 package psmodule
 
