@@ -1,0 +1,156 @@
+# .github/workflows/release.yml
+name: release
+
+on:
+  push:
+    # run only against tags
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  windows-service:
+    runs-on: windows-2022
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.1'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Build
+        run: |
+          SET "VERSION=%GITHUB_REF_NAME:~1%"
+          make executable
+        shell: cmd
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-service
+          path: ${{ env.ARTIFACT }}
+          retention-days: 1
+
+  linux-csi-driver:
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.1'
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Build
+        run: |
+          export VERSION=${GITHUB_REF_NAME##v}
+          make executable
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-csi-driver
+          path: ${{ env.ARTIFACT }}
+          retention-days: 1
+
+  publish:
+    needs:
+    - windows-service
+    - linux-csi-driver
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_PAT: ${{ secrets.DOCKERHUB_PAT }}
+    steps:
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Docker login
+        run: docker login -u fireflycons --password-stdin <<< $DOCKER_PAT
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: 'Download Artifacts'
+        uses: actions/download-artifact@v4
+        with:
+          path: ./
+
+      - name: Build Docker Image
+        run: |
+          ls -lR
+          driver=$(basename "$(find ./linux-csi-driver -type f -name '*')")
+          tag=${GITHUB_REF_NAME##v}
+          cp ./linux-csi-driver/$driver $driver
+          chmod +x $driver
+          docker build -t fireflycons/hyperv-csi-plugin:$tag --build-arg EXECUTABLE=$driver -f docker/Dockerfile .
+
+      - name: Push Docker Image
+        run: |
+          tag=${GITHUB_REF_NAME##v}
+          docker push fireflycons/hyperv-csi-plugin:$tag
+
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          # Find the most recent previous tag, if any
+          if git describe --tags --abbrev=0 HEAD^ >/dev/null 2>&1; then
+            echo "tag=$(git describe --tags --abbrev=0 HEAD^)" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          if [ -n "${{ steps.prev_tag.outputs.tag }}" ]; then
+            echo "## Changes since ${{ steps.prev_tag.outputs.tag }}" > notes.md
+            git log ${{ steps.prev_tag.outputs.tag }}..HEAD --pretty=format:"- %h %s" >> notes.md
+          else
+            echo "## All commits to date" > notes.md
+            git log --pretty=format:"- %h %s" >> notes.md
+          fi
+          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
+          cat notes.md >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Artifacts
+        run: |
+          mkdir -p ./dist
+
+          chmod +x ./linux-csi-driver/*
+          driver=$(basename "$(find ./linux-csi-driver -type f -name '*')")
+          tar -czf ./dist/${driver}.tar.gz -C ./linux-csi-driver
+
+          service=$(basename "$(find ./windows-service -type f -name '*.exe')")
+          zip -j ./dist/$(service).zip ./windows-service/*
+
+          helm package --app-version ${GITHUB_REF_NAME##v} chart
+          mv chart-*.tgz ./dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.notes }}
+          files: |
+            dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,9 +2,11 @@
 bin/
 temp/
 powershell-modules/publish/
-*.exe*
+*.exe
 *.crt
 *.key
 /notes.md
-khypervprovider.exe
 hyperv-csi-plugin
+*.tar.gz
+*.tgz
+*.zip
