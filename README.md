@@ -6,7 +6,7 @@ INCOMPLETE: Work in progress
 |-------------------------|-----------------------|
 | Windows REST Service    | :white_check_mark:    |
 | Kubernetes CSI Workload | :construction_worker: |
-| Helm Chart              | :x:                   |
+| Helm Chart              | :construction_worker: |
 
 This provides a CSI for mounting Hyper-V virtual hard disks as persistent volumes for Kubernetes clusters running on a single Hyper-V server. This includes the Hyper-V service running on your workstation/laptop if you have it. You do not require a dedicated Windows Server.
 
@@ -39,9 +39,13 @@ It comprises of the following components
 
 ## Installation
 
+Installation artifacts are as follows
+* Windows Service binary and Helm chart - Download from this repository's [releases](https://github.com/fireflycons/khyperv-csi/releases) page.
+* Image for cluster - On [Dockerhub](https://hub.docker.com/r/fireflycons/hyperv-csi-plugin).
+
 ### 1. Install the REST Service
 
-1. Extract `khypervprovisioner.exe` to a directory on your Hyper-V server
+1. Extract `khypervprovider.exe` to a directory on your Hyper-V server
 1. If you are going to use provided certificates, copy the certificate and key to the same directory.
 1. Open a Windows PowerShell prompt in the directory where you copied the above files.
 1. Run `.\kypervprovider install -h` to see available installation options.
