@@ -23,6 +23,10 @@ spec:
         app: csi-hv-controller
         role: csi-hv
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       priorityClassName: system-cluster-critical
       serviceAccount: csi-hv-controller-sa
       containers:
@@ -51,7 +55,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "chart.name" . }}
                   key: apiKey
-          imagePullPolicy: "Always"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
             - name: socket-dir
               mountPath: {{ .Values.controller.endpointDirectory }}/
@@ -121,3 +125,15 @@ spec:
           secret:
             secretName: {{ include "chart.fullname" . }}-ca
 {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

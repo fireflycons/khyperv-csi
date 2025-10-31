@@ -16,6 +16,10 @@ spec:
         app: csi-hv-node
         role: csi-hv
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       priorityClassName: system-node-critical
       serviceAccount: csi-hv-node-sa
       hostNetwork: true
@@ -28,7 +32,7 @@ spec:
           env:
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
-          imagePullPolicy: "Always"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             privileged: true
             capabilities:
