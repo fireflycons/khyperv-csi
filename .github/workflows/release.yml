@@ -136,10 +136,10 @@ jobs:
 
           chmod +x ./linux-csi-driver/*
           driver=$(basename "$(find ./linux-csi-driver -type f -name '*')")
-          tar -czf ./dist/${driver}.tar.gz -C ./linux-csi-driver $driver
+          tar -czf ./dist/${driver}_linux_amd64.tar.gz -C ./linux-csi-driver $driver
 
           service=$(basename "$(find ./windows-service -type f -name '*.exe')")
-          zip -j "./dist/${service%.exe}.zip" "./windows-service/${service}"
+          zip -j "./dist/${service%.exe}_windows_amd64.zip" "./windows-service/${service}"
 
           helm package --app-version ${GITHUB_REF_NAME##v} chart
           mv chart-*.tgz ./dist/
