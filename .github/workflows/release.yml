@@ -87,6 +87,8 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 'Download Artifacts'
         uses: actions/download-artifact@v4
@@ -109,9 +111,8 @@ jobs:
       - name: Get previous tag
         id: prev_tag
         run: |
-          # Find the most recent previous tag, if any
-          if git describe --tags --abbrev=0 HEAD^ >/dev/null 2>&1; then
-            echo "tag=$(git describe --tags --abbrev=0 HEAD^)" >> "$GITHUB_OUTPUT"
+          if git describe --tags --abbrev=0 --exclude "$(git describe --tags --abbrev=0)" 2>/dev/null; then
+            echo "tag=$(git describe --tags --abbrev=0 --exclude "$(git describe --tags --abbrev=0)")" >> "$GITHUB_OUTPUT"
           else
             echo "tag=" >> "$GITHUB_OUTPUT"
           fi
