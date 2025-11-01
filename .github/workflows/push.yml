@@ -1,5 +1,12 @@
 name: Lint and Test
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - '**'     # all branches
+    tags-ignore:
+      - '**'     # ignore all tags
+  pull_request:
+
 jobs:
   precheck:
     runs-on: ubuntu-latest

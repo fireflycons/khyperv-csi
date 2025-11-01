@@ -1,6 +1,12 @@
 .vscode/
 bin/
 temp/
+act/
+dist/
+linux-csi-driver/
+.actrc
+.artifacts
+.secrets
 powershell-modules/publish/
 *.exe
 *.crt
