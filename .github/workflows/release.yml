@@ -141,8 +141,9 @@ jobs:
           service=$(basename "$(find ./windows-service -type f -name '*.exe')")
           zip -j "./dist/${service%.exe}_windows_amd64.zip" "./windows-service/${service}"
 
+          rm -f *.tgz
           helm package --app-version ${GITHUB_REF_NAME##v} chart
-          mv chart-*.tgz ./dist/
+          mv *.tgz ./dist/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
