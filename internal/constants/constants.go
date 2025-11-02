@@ -63,5 +63,6 @@ const (
 )
 
 const (
-	PowerShellModule = "khyperv-csi"
+	RepoName = "khyperv-csi"
+	PowerShellModule = RepoName
 )
