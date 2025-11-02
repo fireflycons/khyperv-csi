@@ -52,6 +52,7 @@ type OSInfo struct {
 type CPUInfo struct {
 	ModelName  string  `json:"model_name"`
 	Sockets    int     `json:"sockets"`
+	Cores      int     `json:"cores"`
 	Threads    int     `json:"threads"`
 	Mhz        float64 `json:"mhz_per_core"`
 	Hypervisor string  `json:"hypervisor,omitempty"`
@@ -191,24 +192,32 @@ func collectCPUInfo() CPUInfo {
 	}
 
 	socketSet := make(map[string]struct{})
+	coreSet := make(map[string]struct{})
+	threads := 0
 
 	for i := range cpus {
 		socketSet[cpus[i].PhysicalID] = struct{}{}
+		coreSet[fmt.Sprintf("%s:%s", cpus[i].PhysicalID, cpus[i].CoreID)] = struct{}{}
+		threads += int(cpus[i].Cores)
 	}
 
 	sockets := len(socketSet)
 	if sockets == 0 {
 		sockets = 1
 	}
+	cores := len(coreSet)
+	if cores == 0 {
+		cores = runtime.NumCPU()
+	}
 
 	return CPUInfo{
 		ModelName: model,
 		Sockets:   sockets,
-		Threads:   int(cpus[0].Cores),
+		Cores:     cores,
+		Threads:   threads,
 		Mhz:       cpus[0].Mhz,
 	}
 }
-
 func collectMemoryInfo() MemoryInfo {
 	vm, err := mem.VirtualMemory()
 	if err != nil {
@@ -315,6 +324,7 @@ func (r SystemReport) String() string {
 
 	sb.WriteString("\n--- CPU Info ---\n")
 	sb.WriteString(fmt.Sprintf("CPU Model:      %s\n", r.CPU.ModelName))
+	sb.WriteString(fmt.Sprintf("Cores:          %d\n", r.CPU.Cores))
 	sb.WriteString(fmt.Sprintf("Sockets:        %d\n", r.CPU.Sockets))
 	sb.WriteString(fmt.Sprintf("Threads:        %d\n", r.CPU.Threads))
 	sb.WriteString(fmt.Sprintf("Mhz per core:   %.2f\n", r.CPU.Mhz))
