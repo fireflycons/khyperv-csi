@@ -82,7 +82,7 @@ func (s *ControllerTestSuite) TestCreateIdempotent() {
 		diskId = constants.ZeroUUID
 	)
 
-	exitingVhdResponse := &models.GetVHDResponse{
+	existingVhdResponse := &models.GetVHDResponse{
 		Path:           fmt.Sprintf("C:\\Temp\\pv1;%s.vhdx", constants.ZeroUUID),
 		Name:           "pv1",
 		Size:           size,
@@ -95,7 +95,7 @@ func (s *ControllerTestSuite) TestCreateIdempotent() {
 		Name: "pv1",
 	}
 
-	s.shell.EXPECT().Execute(mock.Anything).Return(s.JSON(exitingVhdResponse), "", nil).Once()
+	s.shell.EXPECT().Execute(mock.Anything).Return(s.JSON(existingVhdResponse), "", nil).Once()
 
 	actual, err := s.server.CreateVolume("pv1", size)
 
