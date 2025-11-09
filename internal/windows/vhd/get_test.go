@@ -13,18 +13,20 @@ func (s *VHDTestSuite) TestGet() {
 	s.Require().NoError(err)
 	s.Require().NotEmpty(allDisks.VHDs)
 
+	testDisk := allDisks.VHDs[0]
+
 	s.Run("by ID", func() {
-		disk, err := GetByID(s.runner, s.pvStore, allDisks.VHDs[0].DiskIdentifier)
+		disk, err := GetByID(s.runner, s.pvStore, testDisk.DiskIdentifier)
 		s.Require().NoError(err)
 		s.Require().NotNil(disk)
-		s.Require().Equal(allDisks.VHDs[0].DiskIdentifier, disk.DiskIdentifier)
+		s.Require().Equal(testDisk.DiskIdentifier, disk.DiskIdentifier)
 	})
 
 	s.Run("by Name", func() {
-		disk, err := GetByName(s.runner, s.pvStore, allDisks.VHDs[0].Name)
+		disk, err := GetByName(s.runner, s.pvStore, testDisk.Name)
 		s.Require().NoError(err)
 		s.Require().NotNil(disk)
-		s.Require().Equal(allDisks.VHDs[0].DiskIdentifier, disk.DiskIdentifier)
+		s.Require().Equal(testDisk.DiskIdentifier, disk.DiskIdentifier)
 	})
 
 	s.Run("by Name not found", func() {

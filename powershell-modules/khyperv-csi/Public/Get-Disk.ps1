@@ -13,7 +13,9 @@ function Get-Disk {
         [string]$PVStore,
 
         [Parameter(ParameterSetName = 'ByPath')]
-        [string]$Path
+        [string]$Path,
+
+        [switch]$AsJson
     )
 
     if ($PSCmdlet.ParameterSetName -ne "ByPath") {
@@ -70,5 +72,10 @@ function Get-Disk {
         }
     }
 
-    $vhd | ConvertTo-Json -Compress
+    if ($AsJson.IsPresent) {
+        $vhd | ConvertTo-Json -Compress
+    }
+    else {
+        $vhd
+    }
 }

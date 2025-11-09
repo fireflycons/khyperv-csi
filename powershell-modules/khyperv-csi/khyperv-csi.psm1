@@ -21,3 +21,4 @@ foreach ($import in @($Public + $Private))
 $script:PVStoreName = "Kubernetes Persistent Volumes"
 $script:MinVolumeSize = 5MB
 $script:MaxVolumesPerController = 64
+$script:MinFreeSpace = 5GB
