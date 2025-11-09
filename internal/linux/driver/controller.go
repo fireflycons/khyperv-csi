@@ -77,10 +77,10 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	volumeName := req.Name
 
 	log := d.log.WithFields(logrus.Fields{
-		"volume_name":             volumeName,
-		"storage_size_giga_bytes": size / constants.GiB,
-		"method":                  "create_volume",
-		"volume_capabilities":     req.VolumeCapabilities,
+		"volume_name":         volumeName,
+		"storage_size_gb":     size / constants.GiB,
+		"method":              "create_volume",
+		"volume_capabilities": req.VolumeCapabilities,
 	})
 	log.Info("create volume called")
 

@@ -27,11 +27,8 @@ spec:
         - name: csi-hv-plugin
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           args :
-            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--endpoint=unix:///csi/csi.sock"
             - "--url={{ .Values.controller.serviceUrl }}"
-          env:
-            - name: CSI_ENDPOINT
-              value: unix:///csi/csi.sock
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             privileged: true
@@ -48,17 +45,16 @@ spec:
               mountPropagation: "Bidirectional"
             - name: device-dir
               mountPath: /dev
+            - name: metadata
+              mountPath: /var/lib/hyperv
+              readOnly: true
         - name: csi-node-driver-registrar
           image: registry.k8s.io/sig-storage/csi-node-driver-registrar:{{ .Values.csiVersions.registrar }}
           args:
             - "--v=5"
-            - "--csi-address=$(ADDRESS)"
-            - "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)"
+            - "--csi-address=/csi/csi.sock"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/{{ .Values.driverName }}/csi.sock"
           env:
-            - name: ADDRESS
-              value: /csi/csi.sock
-            - name: DRIVER_REG_SOCK_PATH
-              value: /var/lib/kubelet/plugins/{{ .Values.driverName }}/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -84,3 +80,7 @@ spec:
         - name: device-dir
           hostPath:
             path: /dev
+        - name: metadata
+          hostPath:
+            path: /var/lib/hyperv
+            type: Directory

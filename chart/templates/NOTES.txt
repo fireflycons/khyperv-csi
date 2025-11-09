@@ -1,1 +1,3 @@
-Deployed!
+
+Installed release "{{ .Release.Name }}" to namespace "{{ .Release.Namespace }}"
+

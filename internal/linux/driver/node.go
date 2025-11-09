@@ -23,12 +23,13 @@ package driver
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,8 +39,7 @@ import (
 )
 
 const (
-	diskIDPath   = "/dev/disk/by-id"
-	diskDOPrefix = "scsi-0DO_Volume_"
+	diskIDPath = "/dev/disk/by-id"
 
 	volumeModeBlock      = "block"
 	volumeModeFilesystem = "filesystem"
@@ -94,7 +94,11 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		return &csi.NodeStageVolumeResponse{}, nil
 	}
 
-	source := getDeviceByIDPath(volumeName)
+	source, err := hypervDiskByID(req.VolumeId)
+	if err != nil {
+		return nil, fmt.Errorf("cannot determine udev disk ID: %w", err)
+	}
+
 	target := req.StagingTargetPath
 
 	mnt := req.VolumeCapability.GetMount()
@@ -115,6 +119,8 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		"mount_options":   options,
 	})
 
+	log.Info("checking if the disk needs formatting")
+
 	var noFormat bool
 	for _, ann := range annsNoFormatVolume {
 		_, noFormat = req.VolumeContext[ann]
@@ -126,11 +132,13 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		log.Info("skipping formatting the source device")
 	} else {
 		if d.validateAttachment {
+			//nolint:govet // intentional redeclaration of err
 			if err := d.mounter.IsAttached(source); err != nil {
 				return nil, fmt.Errorf("error retrieving the attachement status %q: %w", source, err)
 			}
 		}
 
+		//nolint:govet // intentional redeclaration of err
 		formatted, err := d.mounter.IsFormatted(source)
 		if err != nil {
 			return nil, err
@@ -465,7 +473,7 @@ func (d *Driver) nodePublishVolumeForBlock(req *csi.NodePublishVolumeRequest, mo
 		return status.Error(codes.InvalidArgument, fmt.Sprintf("Could not find the volume name from the publish context %q", d.publishInfoVolumeName))
 	}
 
-	source, err := findAbsoluteDeviceByIDPath(volumeName)
+	source, err := hypervDiskByID(req.VolumeId)
 	if err != nil {
 		return status.Errorf(codes.Internal, "Failed to find device path for volume %s. %v", volumeName, err)
 	}
@@ -495,26 +503,51 @@ func (d *Driver) nodePublishVolumeForBlock(req *csi.NodePublishVolumeRequest, mo
 	return nil
 }
 
-// getDeviceByIDPath returns the absolute path of the attached volume for the given
-// Hyper-V volume name
-func getDeviceByIDPath(volumeName string) string {
-	return filepath.Join(diskIDPath, fmt.Sprintf("%s%s", diskDOPrefix, volumeName))
-}
+// hypervDiskByID converts a Hyper-V DiskIdentifier UUID into the /dev/disk/by-id
+// "scsi-3<wwn>" link that Linux creates for synthetic SCSI disks.
+//
+// WWN layout (16 bytes total):
+//
+//	[0:4]   = 0x60 0x02 0x24 0x80  (NAA=6 + Microsoft OUI)
+//	[4:8]   = UUID.Data1 (reversed for little-endian)
+//	[8:10]  = UUID.Data2 (reversed for little-endian)
+//	[10:16] = last 6 bytes of UUID.Data4 (drop first 2 bytes)
+func hypervDiskByID(guid string) (string, error) {
 
-// findAbsoluteDeviceByIDPath follows the /dev/disk/by-id symlink to find the absolute path of a device
-func findAbsoluteDeviceByIDPath(volumeName string) (string, error) {
-	path := getDeviceByIDPath(volumeName)
+	const (
+		networkAddressAuthority = "\x60"
+		microsoftOUI            = "\x02\x24\x80"
 
-	// EvalSymlinks returns relative link if the file is not a symlink
-	// so we do not have to check if it is symlink prior to evaluation
-	resolved, err := filepath.EvalSymlinks(path)
+		wwnLength = 16
+	)
+
+	u, err := uuid.Parse(guid)
 	if err != nil {
-		return "", fmt.Errorf("could not resolve symlink %q: %w", path, err)
+		return "", err
 	}
+	b := u[:] // 16-byte RFC 4122 layout
 
-	if !strings.HasPrefix(resolved, "/dev") {
-		return "", fmt.Errorf("resolved symlink %q for %q was unexpected", resolved, path)
+	// Reverse first three fields to convert RFC4122 -> Windows GUID memory layout.
+	reverse := func(bs []byte) { // helper to reverse bytes in place
+		for i, j := 0, len(bs)-1; i < j; i, j = i+1, j-1 {
+			bs[i], bs[j] = bs[j], bs[i]
+		}
 	}
+	reverse(b[0:4]) // Data1
+	reverse(b[4:6]) // Data2
+	reverse(b[6:8]) // Data3
 
-	return resolved, nil
+	// Take Data4 (bytes[8:16]), but only the last 6 bytes.
+	last6 := b[10:16]
+
+	// Build WWN: 4-byte prefix + p1(4) + p2(2) + last6(6) => 16 bytes
+	wwn := make([]byte, 0, wwnLength)
+	wwn = append(wwn, []byte(networkAddressAuthority)...) // NAA type
+	wwn = append(wwn, []byte(microsoftOUI)...)            // Microsoft OUI
+	wwn = append(wwn, b[0:4]...)                          // Data1 (LE)
+	wwn = append(wwn, b[4:6]...)                          // Data2 (LE)
+	wwn = append(wwn, last6...)
+
+	hexStr := hex.EncodeToString(wwn) // lowercase
+	return filepath.Join(diskIDPath, fmt.Sprintf("scsi-3%s", hexStr)), nil
 }

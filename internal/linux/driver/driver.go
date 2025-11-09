@@ -37,6 +37,7 @@ import (
 	"github.com/fireflycons/hypervcsi/internal/hyperv"
 	"github.com/fireflycons/hypervcsi/internal/linux/kvp"
 	"github.com/fireflycons/hypervcsi/internal/logging"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -135,6 +136,13 @@ func NewDriver(p *NewDriverParams) (*Driver, error) {
 
 	log := logging.New()
 
+	log.WithFields(logrus.Fields{
+		"endpoint":    p.Endpoint,
+		"driver-name": p.DriverName,
+		"url":         p.URL,
+		"api-key":     redact(p.ApiKey),
+	}).Info("Startup arguments")
+
 	md := p.Metadata
 	if md == nil {
 		md = kvp.New()
@@ -216,6 +224,7 @@ func (d *Driver) Run(ctx context.Context) error {
 	if u.Scheme != "unix" {
 		return fmt.Errorf("currently only unix domain sockets are supported, have: %s", u.Scheme)
 	}
+
 	// remove the socket if it's already there. This can happen if we
 	// deploy a new version and the socket was created from the old running
 	// plugin.
@@ -318,4 +327,47 @@ func (d *Driver) Run(ctx context.Context) error {
 	}
 
 	return err
+}
+
+// parseUuid parses a UUID from a string.
+// Returns a uuid.UUID and true if successful; else zero UUID and false.
+func parseUuid(u string) (uuid.UUID, bool) {
+
+	if id, err := uuid.Parse(u); err != nil {
+		return uuid.UUID{}, false
+	} else {
+		return id, true
+	}
+}
+
+// redact a secret for log inclusion.
+func redact(secret string) string {
+
+	const (
+		minLen = 6
+		maxLen = 60
+	)
+
+	if secret == "" {
+		return ""
+	}
+
+	if _, ok := parseUuid(secret); ok {
+		return secret[:9] + "{REDACTED}" + secret[23:]
+	}
+
+	r := []rune(secret)
+	l := len(r)
+
+	if l < minLen {
+		return "{REDACTED}"
+	}
+
+	if l > maxLen {
+		// Big secrets, e.g. certs
+		return string(r[:20]) + "{REDACTED}" + string(r[(l-20):])
+	}
+
+	l /= 3
+	return string(r[:l]) + "{REDACTED}" + string(r[(l*2):])
 }

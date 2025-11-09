@@ -40,11 +40,20 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&endpointFlag, "endpoint", "e", "unix:///var/lib/kubelet/plugins/"+driver.DefaultDriverName+"/csi.sock", "CSI endpoint")
-	rootCmd.Flags().StringVarP(&urlFlag, "url", "u", "", "URL of khypervprovider Windows Service")
+	rootCmd.Flags().StringVarP(&endpointFlag, "endpoint", "e", envOrDefault("ENDPOINT", "unix:///var/lib/kubelet/plugins/"+driver.DefaultDriverName+"/csi.sock"), "CSI endpoint")
+	rootCmd.Flags().StringVarP(&urlFlag, "url", "u", os.Getenv("URL"), "URL of khypervprovider Windows Service")
 	rootCmd.Flags().StringVarP(&driverNameFlag, "driver-name", "n", driver.DefaultDriverName, "Name for the driver")
 	rootCmd.Flags().StringVarP(&debugAddrFlag, "debug-addr", "d", "", "Address to serve the HTTP debug server on")
-	rootCmd.Flags().StringVarP(&apiKeyFlag, "api-key", "k", "", "API key to access Hyper-V service backend")
+	rootCmd.Flags().StringVarP(&apiKeyFlag, "api-key", "k", os.Getenv("API_KEY"), "API key to access Hyper-V service backend")
+}
+
+func envOrDefault(varname, defaultValue string) string {
+
+	if v, present := os.LookupEnv(varname); present {
+		return v
+	}
+
+	return defaultValue
 }
 
 func runDriver(*cobra.Command, []string) {

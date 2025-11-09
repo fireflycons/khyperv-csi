@@ -1,4 +1,5 @@
 VERSION ?= 0.0.1
+export
 
 ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
     detected_OS := Windows
@@ -139,23 +140,44 @@ endif
 .PHONY: executable
 executable: $(PSMODULE_TARGET) $(BIN_TARGET) ## Build Executable (Hyper-V service on Windows, Driver on Linux)
 
+# ------------ DOCKER -------------
+
 ##@ Docker (Linux only)
-ifneq ($(detected_OS),Windows)
 
 image: executable ## Make docker image
-	docker build -t $(BIN_TARGET) --build-arg EXECUTABLE=$(BIN_TARGET) -f docker/Dockerfile .
+ifneq ($(detected_OS),Windows)
+	docker login
+	docker build -t fireflycons/$(BIN_TARGET):$(VERSION) --build-arg EXECUTABLE=$(BIN_TARGET) -f docker/Dockerfile .
+else
+	echo "image: Nothing to do for Windows"
+endif
+
+docker-push: image ## Push docker image
+ifneq ($(detected_OS),Windows)
+	docker push fireflycons/$(BIN_TARGET):$(VERSION)
+else
+	echo "image: Nothing to do for Windows"
 endif
 
 
 ##@ Testing
 
 # ------------------ TESTS ------------------
-ifeq ($(detected_OS),Windows)
 
 .PHONY: install-module
 install-module: powershell ## (Windows) Install the powershell module as current user (for tests)
+ifeq ($(detected_OS),Windows)
 	@$(POWERSHELL) -File cmd\khypervprovider\psmodule\install-module.ps1 -Package cmd/khypervprovider/psmodule/khyperv-csi.$(VERSION).nupkg -CurrentUser
+else
+	echo "install-module: Nothing to do for Linux"
+endif
 
+.PHONY: install-csi
+install-csi: ## (Linux) Install CSI plugin locally to Kubernetes current context
+ifeq ($(detected_OS),Windows)
+	echo "install-csi: Nothing to do for Windows"
+else
+	zbuild/helm-install-local.sh
 endif
 
 .PHONY: test
