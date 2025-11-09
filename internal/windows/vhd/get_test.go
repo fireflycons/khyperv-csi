@@ -3,6 +3,7 @@
 package vhd
 
 import (
+	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/fireflycons/hypervcsi/internal/windows/powershell"
 	"google.golang.org/grpc/codes"
 )
@@ -37,7 +38,7 @@ func (s *VHDTestSuite) TestGet() {
 	})
 
 	s.Run("by ID not found", func() {
-		_, err := GetByID(s.runner, s.pvStore, "constants.ZeroUUID")
+		_, err := GetByID(s.runner, s.pvStore, constants.ZeroUUID)
 		runnerError := &powershell.RunnerError{}
 		s.Require().ErrorAs(err, &runnerError)
 		s.Require().Equal(codes.NotFound, runnerError.Code)
