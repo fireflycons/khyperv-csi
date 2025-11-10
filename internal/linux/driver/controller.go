@@ -203,6 +203,59 @@ func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 	return &csi.ControllerUnpublishVolumeResponse{}, nil
 }
 
+func (d *Driver) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+
+	if err := validateIds("ControllerExpandVolume", volumeIdentifier(req.VolumeId)); err != nil {
+		return nil, err
+	}
+
+	log := d.log.WithFields(logrus.Fields{
+		"volume_id": req.VolumeId,
+		"method":    "controller_expand_volume",
+	})
+
+	log.Info("controller expand volume called")
+
+	// Verify the volume exists
+	vol, err := d.hypervClient.GetVolume(ctx, req.VolumeId)
+	if err != nil {
+		return nil, processErrorReturn(err, log, "controller_expand_volume - volume does not exist")
+	}
+
+	resizeBytes, err := d.extractStorage(req.GetCapacityRange())
+	if err != nil {
+		return nil, status.Errorf(codes.OutOfRange, "ControllerExpandVolume invalid capacity range: %v", err)
+	}
+
+	if vol.Size >= resizeBytes {
+		log.WithFields(logrus.Fields{
+			"current_volume_size":   vol.Size,
+			"requested_volume_size": resizeBytes,
+		}).Info("skipping volume resize because current volume size exceeds requested volume size")
+		// even if the volume is resized independently from the control panel, we still need to resize the node fs when resize is requested
+		// in this case, the claim capacity will be resized to the volume capacity, requested capcity will be ignored to make the PV and PVC capacities consistent
+		return &csi.ControllerExpandVolumeResponse{CapacityBytes: vol.Size, NodeExpansionRequired: true}, nil
+	}
+
+	resp, err := d.hypervClient.ExpandVolume(ctx, req.VolumeId, resizeBytes)
+	if err != nil {
+		return nil, processErrorReturn(err, log, "controller_expand_volume - expand vaolume failed")
+	}
+
+	log = log.WithField("new_volume_size", resp.CapacityBytes)
+	log.Info("volume was resized")
+
+	nodeExpansionRequired := true
+	if req.GetVolumeCapability() != nil {
+		if _, ok := req.GetVolumeCapability().GetAccessType().(*csi.VolumeCapability_Block); ok {
+			log.Info("node expansion is not required for block volumes")
+			nodeExpansionRequired = false
+		}
+	}
+
+	return &csi.ControllerExpandVolumeResponse{CapacityBytes: resp.CapacityBytes, NodeExpansionRequired: nodeExpansionRequired}, nil
+}
+
 // ValidateVolumeCapabilities checks whether the volume capabilities requested are supported.
 func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 
@@ -331,7 +384,7 @@ func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.Control
 		csi.ControllerServiceCapability_RPC_LIST_VOLUMES,
 		// csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 		// csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
-		// csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
+		csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
 		csi.ControllerServiceCapability_RPC_LIST_VOLUMES_PUBLISHED_NODES,
 	} {
 		caps = append(caps, newCap(cap))
