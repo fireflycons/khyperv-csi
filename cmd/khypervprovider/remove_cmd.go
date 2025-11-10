@@ -56,17 +56,17 @@ func doRemove() error {
 		_ = serviceControlManager.Disconnect()
 	}()
 
-	log.Println("Removing Windows service...")
+	psmodule.InstallLog.Println("Removing Windows service...")
 
 	if err := assertService(serviceControlManager, constants.ServiceName); err != nil {
-		log.Println("service already removed")
+		psmodule.InstallLog.Println("service already removed")
 	} else {
 		// Won't error since assertService already successfully made this call
 		s, _ := serviceControlManager.OpenService(constants.ServiceName)
 		stat, _ := s.Control(svc.Stop)
 
 		if stat.State != svc.Stopped {
-			log.Println("Waiting for service to stop...")
+			psmodule.InstallLog.Println("Waiting for service to stop...")
 			time.Sleep(pauseAfterStop)
 			ctx, cancel := context.WithTimeout(context.Background(), maxOperationWaitTime)
 			defer cancel()
@@ -86,7 +86,7 @@ func doRemove() error {
 					if !ok {
 						status = fmt.Sprintf("Unknown state %d", stat.State)
 					}
-					log.Printf("- service status: %s", status)
+					psmodule.InstallLog.Printf("- service status: %s", status)
 
 					if stat.State == svc.Stopped {
 						break STOP_LOOP
@@ -100,11 +100,11 @@ func doRemove() error {
 		}
 	}
 
-	log.Println("Service removed")
+	psmodule.InstallLog.Println("Service removed")
 
 	// remove eventlog
 	if err := eventlog.Remove(constants.ServiceName); err != nil {
-		log.Printf("Cannot remove eventlog: %v", err)
+		psmodule.InstallLog.Printf("Cannot remove eventlog: %v", err)
 	}
 
 	// remove module
@@ -112,7 +112,7 @@ func doRemove() error {
 		return err
 	}
 
-	log.Println("PowerShell module removed")
+	psmodule.InstallLog.Println("PowerShell module removed")
 
 	return nil
 }

@@ -4,7 +4,6 @@ package psmodule
 
 import (
 	"fmt"
-	"log"
 )
 
 func RemoveModule() error {
@@ -17,7 +16,7 @@ func RemoveModule() error {
 
 	defer extracted.cleanup()
 
-	log.Println("Removing PowerShell module khyperv-csi...")
+	InstallLog.Println("Removing PowerShell module khyperv-csi...")
 
 	if err := runPowershell(extracted.installScript, "-Remove"); err != nil {
 		return fmt.Errorf("remove-module: Error removing PowerShell module: %v", err.Error())
