@@ -43,6 +43,9 @@ type Client interface {
 	// UnpublishVolume dismounts a volume from a node
 	UnpublishVolume(ctx context.Context, volumeId, nodeId string) error
 
+	// ExpandVolume enlarges a volume to the given size
+	ExpandVolume(ctx context.Context, volumeId string, size int64) (*rest.ExpandVolumeResponse, error)
+
 	// ListVms returns a list of all VMs defined in the Hyper-V server
 	ListVms(ctx context.Context) (*rest.ListVMResponse, error)
 
@@ -158,7 +161,7 @@ func (c client) ListVms(ctx context.Context) (*rest.ListVMResponse, error) {
 // GetVm gets the VM with the given ID
 func (c client) GetVm(ctx context.Context, nodeId string) (*rest.GetVMResponse, error) {
 
-		target := c.addr.ResolveReference(&url.URL{
+	target := c.addr.ResolveReference(&url.URL{
 		Path: "vms",
 		RawQuery: url.Values{
 			"id": {nodeId},
@@ -188,6 +191,22 @@ func (c client) UnpublishVolume(ctx context.Context, volumeId, nodeId string) er
 	return c.publisher(ctx, volumeId, nodeId, unpublish)
 }
 
+func (c client) ExpandVolume(ctx context.Context, volumeId string, sizeBytes int64) (*rest.ExpandVolumeResponse, error) {
+
+	if sizeBytes < 0 {
+		return nil, errNegativeValue
+	}
+
+	target := c.addr.ResolveReference(&url.URL{
+		Path: "volume/" + volumeId,
+		RawQuery: url.Values{
+			"size": {strconv.FormatInt(sizeBytes, 10)},
+		}.Encode(),
+	})
+
+	return apiCall[*rest.ExpandVolumeResponse](ctx, c, "create volume", target, "PUT", c.apiKey)
+}
+
 func (c client) HealthCheck(ctx context.Context) (*rest.HealthyResponse, error) {
 
 	target := c.addr.ResolveReference(&url.URL{
@@ -201,7 +220,7 @@ func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publi
 
 	method, opName := func() (string, string) {
 		if op == publish {
-			return "POST", "publish"
+			return "PUT", "publish"
 		}
 		return "DELETE", "unpublish"
 	}()

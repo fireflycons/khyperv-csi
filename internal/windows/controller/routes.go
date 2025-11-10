@@ -14,22 +14,22 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-//	@BasePath		/
-//	@Summary		Create a new VHD
-//	@Param			X-Api-Key	header	string	true	"API Key"
-//	@Param			size		query	int		true	"Volume size"
-//	@Param			name		path	string	true	"Volume name"
-//	@Schemes		http
-//	@Description	Create a new VHD
-//	@Tags			Disks
-//	@Accept			json
-//	@Produce		json
-//	@Success		201	{object}	rest.GetVolumeResponse
-//	@Failure		400	{object}	rest.Error	"Invalid arguments"
-//	@Failure		403	{object}	rest.Error	"Access denied"
-//	@Failure		409	{object}	rest.Error
-//	@Failure		500	{object}	rest.Error
-//	@Router			/volume/{name} [post]
+// @BasePath		/
+// @Summary		Create a new VHD
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Param			size		query	int		true	"Volume size"
+// @Param			name		path	string	true	"Volume name"
+// @Schemes		http
+// @Description	Create a new VHD
+// @Tags			Disks
+// @Accept			json
+// @Produce		json
+// @Success		201	{object}	rest.GetVolumeResponse
+// @Failure		400	{object}	rest.Error	"Invalid arguments"
+// @Failure		403	{object}	rest.Error	"Access denied"
+// @Failure		409	{object}	rest.Error
+// @Failure		500	{object}	rest.Error
+// @Router			/volume/{name} [post]
 func (s *controllerServer) HandleCreateVolume(ctx *gin.Context) {
 
 	name := ctx.Param("name")
@@ -62,22 +62,22 @@ func (s *controllerServer) HandleCreateVolume(ctx *gin.Context) {
 	processResponse(ctx, resp, http.StatusCreated, err)
 }
 
-//	@BasePath		/
-//	@Summary		Get an existing VHD
-//	@Param			X-Api-Key	header	string	true	"API Key"
-//	@Param			name		path	string	true	"Volume name or ID"
-//	@Schemes		http
-//	@Description	Get an existing VHD
-//	@Tags			Disks
-//	@Accept			json
-//	@Produce		json
-//	@Success		201	{object}	rest.GetVolumeResponse
-//	@Failure		400	{object}	rest.Error	"Invalid arguments"
-//	@Failure		403	{object}	rest.Error	"Access denied"
-//	@Failure		404	{object}	rest.Error	"Not found"
-//	@Failure		409	{object}	rest.Error
-//	@Failure		500	{object}	rest.Error
-//	@Router			/volume/{name} [get]
+// @BasePath		/
+// @Summary		Get an existing VHD
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Param			name		path	string	true	"Volume name or ID"
+// @Schemes		http
+// @Description	Get an existing VHD
+// @Tags			Disks
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	rest.GetVolumeResponse
+// @Failure		400	{object}	rest.Error	"Invalid arguments"
+// @Failure		403	{object}	rest.Error	"Access denied"
+// @Failure		404	{object}	rest.Error	"Not found"
+// @Failure		409	{object}	rest.Error
+// @Failure		500	{object}	rest.Error
+// @Router			/volume/{name} [get]
 func (s *controllerServer) HandleGetVolume(ctx *gin.Context) {
 
 	name := ctx.Param("name")
@@ -91,20 +91,20 @@ func (s *controllerServer) HandleGetVolume(ctx *gin.Context) {
 	processResponse(ctx, resp, http.StatusOK, err)
 }
 
-//	@BasePath		/
-//	@Summary		Delete a VHD
-//	@Param			X-Api-Key	header	string	true	"API Key"
-//	@Param			id			path	string	true	"Volume ID"
-//	@Schemes		http
-//	@Description	Delete a VHD
-//	@Tags			Disks
-//	@Accept			json
-//	@Produce		json
-//	@Success		200
-//	@Failure		400	{object}	rest.Error	"Invalid arguments"
-//	@Failure		403	{object}	rest.Error	"Access denied"
-//	@Failure		500	{object}	rest.Error
-//	@Router			/volume/{id} [delete]
+// @BasePath		/
+// @Summary		Delete a VHD
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Param			id			path	string	true	"Volume ID"
+// @Schemes		http
+// @Description	Delete a VHD
+// @Tags			Disks
+// @Accept			json
+// @Produce		json
+// @Success		204
+// @Failure		400	{object}	rest.Error	"Invalid arguments"
+// @Failure		403	{object}	rest.Error	"Access denied"
+// @Failure		500	{object}	rest.Error
+// @Router			/volume/{id} [delete]
 func (s *controllerServer) HandleDeleteVolume(ctx *gin.Context) {
 
 	volId := ctx.Param("id")
@@ -115,24 +115,24 @@ func (s *controllerServer) HandleDeleteVolume(ctx *gin.Context) {
 	}
 
 	err := s.DeleteVolume(volId)
-	processResponse(ctx, nil, http.StatusOK, err)
+	processResponse(ctx, nil, http.StatusNoContent, err)
 }
 
-//	@BasePath		/
-//	@Summary		List volumes
-//	@Param			X-Api-Key	header	string	true	"API Key"
-//	@Param			maxentries	query	int		false	"Maximum entires to return"
-//	@Param			nexttoken	query	string	false	"Next token for pagination"
-//	@Schemes		http
-//	@Description	List volumes
-//	@Tags			Disks
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	rest.ListVolumesResponse
-//	@Failure		400	{object}	rest.Error	"Invalid arguments"
-//	@Failure		403	{object}	rest.Error	"Access denied"
-//	@Failure		500	{object}	rest.Error
-//	@Router			/volumes [get]
+// @BasePath		/
+// @Summary		List volumes
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Param			maxentries	query	int		false	"Maximum entires to return"
+// @Param			nexttoken	query	string	false	"Next token for pagination"
+// @Schemes		http
+// @Description	List volumes
+// @Tags			Disks
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	rest.ListVolumesResponse
+// @Failure		400	{object}	rest.Error	"Invalid arguments"
+// @Failure		403	{object}	rest.Error	"Access denied"
+// @Failure		500	{object}	rest.Error
+// @Router			/volumes [get]
 func (s *controllerServer) HandleListVolumes(ctx *gin.Context) {
 
 	maxEntries := func() int {
@@ -173,74 +173,123 @@ func (s *controllerServer) HandleListVolumes(ctx *gin.Context) {
 	processResponse(ctx, resp, http.StatusOK, err)
 }
 
-//	@BasePath		/
-//	@Summary		Get storage capacity
-//	@Param			X-Api-Key	header	string	true	"API Key"
-//	@Schemes		http
-//	@Description	Returns available capacity for new volumes, accounting for dynamic disk sizing
-//	@Tags			Disks
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	rest.GetCapacityResponse
-//	@Failure		403	{object}	rest.Error	"Access denied"
-//	@Failure		500	{object}	rest.Error
-//	@Router			/capacity [get]
+// @BasePath		/
+// @Summary		Get storage capacity
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Schemes		http
+// @Description	Returns available capacity for new volumes, accounting for dynamic disk sizing
+// @Tags			Disks
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	rest.GetCapacityResponse
+// @Failure		403	{object}	rest.Error	"Access denied"
+// @Failure		500	{object}	rest.Error
+// @Router			/capacity [get]
 func (s *controllerServer) HandleGetCapacity(ctx *gin.Context) {
 
 	resp, err := s.GetCapacity()
 	processResponse(ctx, resp, http.StatusOK, err)
 }
 
-//	@BasePath		/
-//	@Summary		Publish Volume
-//	@Param			X-Api-Key	header	string	true	"API Key"
-//	@Schemes		http
-//	@Param			nodeid	path	string	true	"Node ID"
-//	@Param			volid	path	string	true	"Volume ID"
-//	@Description	Attaches a volume to a node
-//	@Tags			Disks
-//	@Accept			json
-//	@Produce		json
-//	@Success		200
-//	@Failure		403	{object}	rest.Error	"Access denied"
-//	@Failure		500	{object}	rest.Error
-//	@Router			/attachment/{nodeid}/volume/{volid} [post]
+// @BasePath		/
+// @Summary		Publish Volume
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Schemes		http
+// @Param			nodeid	path	string	true	"Node ID"
+// @Param			volid	path	string	true	"Volume ID"
+// @Description	Attaches a volume to a node
+// @Tags			Disks
+// @Accept			json
+// @Produce		json
+// @Success		204
+// @Failure		403	{object}	rest.Error	"Access denied"
+// @Failure		500	{object}	rest.Error
+// @Router			/attachment/{nodeid}/volume/{volid} [put]
 func (s *controllerServer) HandlePublishVolume(ctx *gin.Context) {
 
 	err := s.PublishVolume(ctx.Param("volid"), ctx.Param("nodeid"))
-	processResponse(ctx, nil, http.StatusOK, err)
+	processResponse(ctx, nil, http.StatusNoContent, err)
 }
 
-//	@BasePath		/
-//	@Summary		Unpublish Volume
-//	@Param			X-Api-Key	header	string	true	"API Key"
-//	@Schemes		http
-//	@Param			nodeid	path	string	true	"Node ID"
-//	@Param			volid	path	string	true	"Volume ID"
-//	@Description	Detaches a volume from a node
-//	@Tags			Disks
-//	@Accept			json
-//	@Produce		json
-//	@Success		200
-//	@Failure		403	{object}	rest.Error	"Access denied"
-//	@Failure		500	{object}	rest.Error
-//	@Router			/attachment/{nodeid}/volume/{volid} [delete]
+// @BasePath		/
+// @Summary		Unpublish Volume
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Schemes		http
+// @Param			nodeid	path	string	true	"Node ID"
+// @Param			volid	path	string	true	"Volume ID"
+// @Description	Detaches a volume from a node
+// @Tags			Disks
+// @Accept			json
+// @Produce		json
+// @Success		204
+// @Failure		403	{object}	rest.Error	"Access denied"
+// @Failure		500	{object}	rest.Error
+// @Router			/attachment/{nodeid}/volume/{volid} [delete]
 func (s *controllerServer) HandleUnpublishVolume(ctx *gin.Context) {
 
 	err := s.UnpublishVolume(ctx.Param("volid"), ctx.Param("nodeid"))
-	processResponse(ctx, nil, http.StatusOK, err)
+	processResponse(ctx, nil, http.StatusNoContent, err)
 }
 
-//	@BasePath		/
-//	@Summary		Check Health
-//	@Schemes		http
-//	@Description	Checks the health of the service
-//	@Tags			Probe
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	rest.HealthyResponse
-//	@Failure		500	{object}	rest.Error
-//	@Router			/healthz [get]
+// @BasePath		/
+// @Summary		Expand a VHD
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Param			size		query	int		true	"Volume size"
+// @Param			id			path	string	true	"Volume id"
+// @Schemes		http
+// @Description	Expand a VHD
+// @Tags			Disks
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	rest.ExpandVolumeResponse
+// @Failure		400	{object}	rest.Error	"Invalid arguments"
+// @Failure		403	{object}	rest.Error	"Access denied"
+// @Failure		404	{object}	rest.Error	"Not found"
+// @Failure		409	{object}	rest.Error
+// @Failure		500	{object}	rest.Error
+// @Router			/volume/{id} [put]
+func (s *controllerServer) HandleExpandVolume(ctx *gin.Context) {
+
+	id := ctx.Param("id")
+
+	if id == "" {
+		abortInvalidArgument(ctx, "missing volume id")
+		return
+	}
+
+	size := ctx.Query("size")
+
+	if size == "" {
+		abortInvalidArgument(ctx, "missing volume size")
+		return
+	}
+
+	sizeBytes, err := strconv.ParseInt(size, 10, 64)
+
+	if err != nil {
+		abortArgumentError(ctx, fmt.Errorf("invalid volume size: %w", err))
+		return
+	}
+
+	if sizeBytes < 0 {
+		abortInvalidArgument(ctx, "volume size cannot be negative")
+		return
+	}
+
+	resp, err := s.ExpandVolume(id, sizeBytes)
+	processResponse(ctx, resp, http.StatusCreated, err)
+}
+
+// @BasePath		/
+// @Summary		Check Health
+// @Schemes		http
+// @Description	Checks the health of the service
+// @Tags			Probe
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	rest.HealthyResponse
+// @Failure		500	{object}	rest.Error
+// @Router			/healthz [get]
 func (s *controllerServer) HandleHealthCheck(ctx *gin.Context) {
 	v := s.runner.Version()
 
@@ -257,35 +306,35 @@ func (s *controllerServer) HandleHealthCheck(ctx *gin.Context) {
 	})
 }
 
-//	@BasePath		/
-//	@Summary		List Virtual Machines
-//	@Schemes		http
-//	@Param			X-Api-Key	header	string	true	"API Key"
-//	@Description	Lists all VMs on the Hyper-V server
-//	@Tags			Virtual Machines
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	rest.ListVMResponse
-//	@Failure		500	{object}	rest.Error
-//	@Router			/vms [get]
+// @BasePath		/
+// @Summary		List Virtual Machines
+// @Schemes		http
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Description	Lists all VMs on the Hyper-V server
+// @Tags			Virtual Machines
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	rest.ListVMResponse
+// @Failure		500	{object}	rest.Error
+// @Router			/vms [get]
 func (s *controllerServer) HandleListVMs(ctx *gin.Context) {
 
 	vms, err := s.ListVms()
 	processResponse(ctx, vms, http.StatusOK, err)
 }
 
-//	@BasePath		/
-//	@Summary		Get Virtual Machine
-//	@Schemes		http
-//	@Param			X-Api-Key	header	string	true	"API Key"
-//	@Param			nodeid		path	string	true	"Node ID"
-//	@Description	Gets a VM by node ID
-//	@Tags			Virtual Machines
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	rest.GetVMResponse
-//	@Failure		500	{object}	rest.Error
-//	@Router			/vm [get]
+// @BasePath		/
+// @Summary		Get Virtual Machine
+// @Schemes		http
+// @Param			X-Api-Key	header	string	true	"API Key"
+// @Param			nodeid		path	string	true	"Node ID"
+// @Description	Gets a VM by node ID
+// @Tags			Virtual Machines
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	rest.GetVMResponse
+// @Failure		500	{object}	rest.Error
+// @Router			/vm [get]
 func (s *controllerServer) HandleGetVM(ctx *gin.Context) {
 
 	nodeId := ctx.Query("id")

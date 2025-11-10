@@ -32,6 +32,7 @@ type ControllerServer interface {
 	GetVm(nodeID string) (*rest.GetVMResponse, error)
 	PublishVolume(volumeId, nodeId string) error
 	UnpublishVolume(volumeId, nodeId string) error
+	ExpandVolume(volumeId string, size int64) (*rest.ExpandVolumeResponse, error)
 
 	/*
 		GIN routes
@@ -43,6 +44,7 @@ type ControllerServer interface {
 	HandleGetCapacity(*gin.Context)
 	HandlePublishVolume(*gin.Context)
 	HandleUnpublishVolume(*gin.Context)
+	HandleExpandVolume(*gin.Context)
 	HandleHealthCheck(*gin.Context)
 	HandleListVMs(*gin.Context)
 	HandleGetVM(*gin.Context)

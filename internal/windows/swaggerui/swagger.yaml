@@ -26,6 +26,13 @@ definitions:
         description: Error message
         type: string
     type: object
+  rest.ExpandVolumeResponse:
+    properties:
+      capacityBytes:
+        type: integer
+      nodeExpansionRequired:
+        type: boolean
+    type: object
   rest.GetCapacityResponse:
     properties:
       availableCapacity:
@@ -118,8 +125,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "403":
           description: Access denied
           schema:
@@ -131,7 +138,7 @@ paths:
       summary: Unpublish Volume
       tags:
       - Disks
-    post:
+    put:
       consumes:
       - application/json
       description: Attaches a volume to a node
@@ -154,8 +161,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "403":
           description: Access denied
           schema:
@@ -290,8 +297,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "400":
           description: Invalid arguments
           schema:
@@ -305,6 +312,56 @@ paths:
           schema:
             $ref: '#/definitions/rest.Error'
       summary: Delete a VHD
+      tags:
+      - Disks
+    put:
+      consumes:
+      - application/json
+      description: Expand a VHD
+      parameters:
+      - description: API Key
+        in: header
+        name: X-Api-Key
+        required: true
+        type: string
+      - description: Volume size
+        in: query
+        name: size
+        required: true
+        type: integer
+      - description: Volume id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.ExpandVolumeResponse'
+        "400":
+          description: Invalid arguments
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/rest.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.Error'
+      summary: Expand a VHD
       tags:
       - Disks
   /volume/{name}:
@@ -326,8 +383,8 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/rest.GetVolumeResponse'
         "400":
