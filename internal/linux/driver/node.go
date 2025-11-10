@@ -433,12 +433,12 @@ func (d *Driver) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
 
 	volumeID := req.GetVolumeId()
-	if len(volumeID) == 0 {
+	if volumeID == "" {
 		return nil, status.Error(codes.InvalidArgument, "NodeExpandVolume volume ID not provided")
 	}
 
 	volumePath := req.GetVolumePath()
-	if len(volumePath) == 0 {
+	if volumePath == "" {
 		return nil, status.Error(codes.InvalidArgument, "NodeExpandVolume volume path not provided")
 	}
 
@@ -450,6 +450,7 @@ func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 	log.Info("node expand volume called")
 
 	if req.GetVolumeCapability() != nil {
+		//nolint:gocritic // May be more cases in future
 		switch req.GetVolumeCapability().GetAccessType().(type) {
 		case *csi.VolumeCapability_Block:
 			log.Info("filesystem expansion is skipped for block volumes")
