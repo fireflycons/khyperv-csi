@@ -64,12 +64,12 @@ func (s *ControllerTestSuite) TestExpandVolumeIdempotentSameSize() {
 	resized := models.GetVHDResponse{
 		Name:           "pv1",
 		DiskIdentifier: constants.ZeroUUID,
-		Size:           int64(newSize),
+		Size:           newSize,
 		Path:           fmt.Sprintf("C:\\Temp\\pv1;%s.vhdx", constants.ZeroUUID),
 	}
 
 	expected := &rest.ExpandVolumeResponse{
-		CapacityBytes:         int64(newSize),
+		CapacityBytes:         newSize,
 		NodeExpansionRequired: false,
 	}
 
@@ -79,7 +79,7 @@ func (s *ControllerTestSuite) TestExpandVolumeIdempotentSameSize() {
 	// and resized
 	s.shell.EXPECT().Execute(mock.Anything).Return(s.JSON(resized), "", nil).Once()
 
-	actual, err := s.server.ExpandVolume(disk.DiskIdentifier, int64(newSize))
+	actual, err := s.server.ExpandVolume(disk.DiskIdentifier, newSize)
 
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)
@@ -110,7 +110,7 @@ func (s *ControllerTestSuite) TestExpandVolumeIdempotentSmaller() {
 	// and resized
 	s.shell.EXPECT().Execute(mock.Anything).Return(s.JSON(disk), "", nil).Once()
 
-	actual, err := s.server.ExpandVolume(disk.DiskIdentifier, int64(newSize))
+	actual, err := s.server.ExpandVolume(disk.DiskIdentifier, newSize)
 
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)

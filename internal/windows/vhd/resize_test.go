@@ -36,7 +36,7 @@ func (s *VHDTestSuite) TestResize() {
 		s.Require().Equal(disk.Size, idempotentDisk.Size)
 	})
 
-	s.Run("Expansion fails if insufficent space", func() {
+	s.Run("Expansion fails if insufficient space", func() {
 		_, err := Resize(s.runner, s.pvStore, resizeDisk.DiskIdentifier, 50*constants.TiB)
 		runnerError := &powershell.RunnerError{}
 		s.Require().ErrorAs(err, &runnerError)
