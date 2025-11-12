@@ -97,10 +97,7 @@ func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) 
 	}
 
 	target := c.addr.ResolveReference(&url.URL{
-		Path: "volume/" + name,
-		RawQuery: url.Values{
-			"size": {strconv.FormatInt(sizeBytes, 10)},
-		}.Encode(),
+		Path: "volume/" + name + "/size/" + strconv.FormatInt(sizeBytes, 10),
 	})
 
 	return apiCall[*rest.GetVolumeResponse](ctx, c, "create volume", target, "POST")
@@ -197,6 +194,7 @@ func (c client) UnpublishVolume(ctx context.Context, volumeId, nodeId string) er
 	return c.publisher(ctx, volumeId, nodeId, unpublish)
 }
 
+// ExpandVolume expands a volume to the given new size
 func (c client) ExpandVolume(ctx context.Context, volumeId string, sizeBytes int64) (*rest.ExpandVolumeResponse, error) {
 
 	if sizeBytes < 0 {
@@ -204,15 +202,13 @@ func (c client) ExpandVolume(ctx context.Context, volumeId string, sizeBytes int
 	}
 
 	target := c.addr.ResolveReference(&url.URL{
-		Path: "volume/" + volumeId,
-		RawQuery: url.Values{
-			"size": {strconv.FormatInt(sizeBytes, 10)},
-		}.Encode(),
+		Path: "volume/" + volumeId + "/size/" + strconv.FormatInt(sizeBytes, 10),
 	})
 
 	return apiCall[*rest.ExpandVolumeResponse](ctx, c, "create volume", target, "PUT")
 }
 
+// HealthCheck performs a basic check on the backend REST service
 func (c client) HealthCheck(ctx context.Context) (*rest.HealthyResponse, error) {
 
 	target := c.addr.ResolveReference(&url.URL{

@@ -163,9 +163,9 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	router.GET("/volume/:name", s.controller.HandleGetVolume)
-	router.POST("/volume/:name", s.controller.HandleCreateVolume)
+	router.POST("/volume/:name/size/:size", s.controller.HandleCreateVolume)
 	router.DELETE("/volume/:id", s.controller.HandleDeleteVolume)
-	router.PUT("/volume/:id", s.controller.HandleExpandVolume)
+	router.PUT("/volume/:id/size/:size", s.controller.HandleExpandVolume)
 	router.GET("/volumes", s.controller.HandleListVolumes)
 	router.GET("/capacity", s.controller.HandleGetCapacity)
 	router.PUT("/attachment/:nodeid/volume/:volid", s.controller.HandlePublishVolume)

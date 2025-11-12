@@ -280,80 +280,6 @@ const docTemplate = `{
             }
         },
         "/volume/{id}": {
-            "put": {
-                "description": "Expand a VHD",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Disks"
-                ],
-                "summary": "Expand a VHD",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "API Key",
-                        "name": "X-Api-Key",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Volume size",
-                        "name": "size",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Volume id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ExpandVolumeResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid arguments",
-                        "schema": {
-                            "$ref": "#/definitions/rest.Error"
-                        }
-                    },
-                    "403": {
-                        "description": "Access denied",
-                        "schema": {
-                            "$ref": "#/definitions/rest.Error"
-                        }
-                    },
-                    "404": {
-                        "description": "Not found",
-                        "schema": {
-                            "$ref": "#/definitions/rest.Error"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/rest.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rest.Error"
-                        }
-                    }
-                }
-            },
             "delete": {
                 "description": "Delete a VHD",
                 "consumes": [
@@ -394,6 +320,82 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/volume/{id}/size/{size}": {
+            "put": {
+                "description": "Expand a VHD",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Disks"
+                ],
+                "summary": "Expand a VHD",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "X-Api-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Volume size",
+                        "name": "size",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Volume id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ExpandVolumeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid arguments",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/rest.Error"
                         }
@@ -474,7 +476,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/volume/{name}/size/{size}": {
             "post": {
                 "description": "Create a new VHD",
                 "consumes": [
@@ -499,7 +503,7 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Volume size",
                         "name": "size",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {

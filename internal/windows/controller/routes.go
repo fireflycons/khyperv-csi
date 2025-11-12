@@ -17,7 +17,7 @@ import (
 // @BasePath		/
 // @Summary		Create a new VHD
 // @Param			X-Api-Key	header	string	true	"API Key"
-// @Param			size		query	int		true	"Volume size"
+// @Param			size		path	int		true	"Volume size"
 // @Param			name		path	string	true	"Volume name"
 // @Schemes		http
 // @Description	Create a new VHD
@@ -29,7 +29,7 @@ import (
 // @Failure		403	{object}	rest.Error	"Access denied"
 // @Failure		409	{object}	rest.Error
 // @Failure		500	{object}	rest.Error
-// @Router			/volume/{name} [post]
+// @Router			/volume/{name}/size/{size} [post]
 func (s *controllerServer) HandleCreateVolume(ctx *gin.Context) {
 
 	name := ctx.Param("name")
@@ -39,7 +39,7 @@ func (s *controllerServer) HandleCreateVolume(ctx *gin.Context) {
 		return
 	}
 
-	size := ctx.Query("size")
+	size := ctx.Param("size")
 
 	if size == "" {
 		abortInvalidArgument(ctx, "missing volume size")
@@ -234,7 +234,7 @@ func (s *controllerServer) HandleUnpublishVolume(ctx *gin.Context) {
 // @BasePath		/
 // @Summary		Expand a VHD
 // @Param			X-Api-Key	header	string	true	"API Key"
-// @Param			size		query	int		true	"Volume size"
+// @Param			size		path	int		true	"Volume size"
 // @Param			id			path	string	true	"Volume id"
 // @Schemes		http
 // @Description	Expand a VHD
@@ -247,7 +247,7 @@ func (s *controllerServer) HandleUnpublishVolume(ctx *gin.Context) {
 // @Failure		404	{object}	rest.Error	"Not found"
 // @Failure		409	{object}	rest.Error
 // @Failure		500	{object}	rest.Error
-// @Router			/volume/{id} [put]
+// @Router			/volume/{id}/size/{size} [put]
 func (s *controllerServer) HandleExpandVolume(ctx *gin.Context) {
 
 	id := ctx.Param("id")
@@ -257,7 +257,7 @@ func (s *controllerServer) HandleExpandVolume(ctx *gin.Context) {
 		return
 	}
 
-	size := ctx.Query("size")
+	size := ctx.Param("size")
 
 	if size == "" {
 		abortInvalidArgument(ctx, "missing volume size")

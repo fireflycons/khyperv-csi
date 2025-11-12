@@ -314,6 +314,7 @@ paths:
       summary: Delete a VHD
       tags:
       - Disks
+  /volume/{id}/size/{size}:
     put:
       consumes:
       - application/json
@@ -325,7 +326,7 @@ paths:
         required: true
         type: string
       - description: Volume size
-        in: query
+        in: path
         name: size
         required: true
         type: integer
@@ -410,6 +411,7 @@ paths:
       summary: Get an existing VHD
       tags:
       - Disks
+  /volume/{name}/size/{size}:
     post:
       consumes:
       - application/json
@@ -421,7 +423,7 @@ paths:
         required: true
         type: string
       - description: Volume size
-        in: query
+        in: path
         name: size
         required: true
         type: integer
