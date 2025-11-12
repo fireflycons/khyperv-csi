@@ -24,8 +24,8 @@ controller:
   apiKey: ""
   # Self-signed CA certificate in PEM format. Pass with --set-file
   caCert: ""
+  logLevel: 4 # info
   # TODO - remove when support is added
-  supportsResize: false
   supportsSnapshot: false
 
 # This sets the versions of the CSI co-located containers on registry.k8s.io/sig-storage

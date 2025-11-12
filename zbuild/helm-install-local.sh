@@ -29,6 +29,7 @@ helm upgrade $RELEASE_NAME --install --create-namespace --namespace "$NS" $CA_AR
     --set image.tag=$VERSION \
     --set controller.apiKey=$HV_APIKEY \
     --set controller.serviceUrl=$HV_URL \
+    --set controller.loglevel=5 \
     --set image.pullPolicy=Always \
     ./chart
 

@@ -34,10 +34,10 @@ import (
 	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/fireflycons/hypervcsi/internal/common"
 	"github.com/fireflycons/hypervcsi/internal/hyperv"
 	"github.com/fireflycons/hypervcsi/internal/linux/kvp"
 	"github.com/fireflycons/hypervcsi/internal/logging"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -118,6 +118,7 @@ type NewDriverParams struct {
 	VolumeLimit            uint
 	Metadata               kvp.MetadataService
 	ApiKey                 string
+	LogLevel               logrus.Level
 }
 
 // NewDriver returns a CSI plugin that contains the necessary gRPC
@@ -134,13 +135,14 @@ func NewDriver(p *NewDriverParams) (*Driver, error) {
 		p.DefaultVolumesPageSize = defaultVolumesPageSize
 	}
 
-	log := logging.New()
+	log := logging.New(p.LogLevel)
 
 	log.WithFields(logrus.Fields{
 		"endpoint":    p.Endpoint,
 		"driver-name": p.DriverName,
 		"url":         p.URL,
-		"api-key":     redact(p.ApiKey),
+		"api-key":     common.Redact(p.ApiKey),
+		"log-level":   p.LogLevel,
 	}).Info("Startup arguments")
 
 	md := p.Metadata
@@ -170,7 +172,7 @@ func NewDriver(p *NewDriverParams) (*Driver, error) {
 		"vm_id":   vmId,
 	})
 
-	hyperVClient, err := hyperv.NewClient(p.URL, &http.Client{}, p.ApiKey)
+	hyperVClient, err := hyperv.NewClient(p.URL, &http.Client{}, p.ApiKey, logEntry)
 
 	if err != nil {
 		return nil, fmt.Errorf("cannot create Hyper-V client: %w", err)
@@ -327,47 +329,4 @@ func (d *Driver) Run(ctx context.Context) error {
 	}
 
 	return err
-}
-
-// parseUuid parses a UUID from a string.
-// Returns a uuid.UUID and true if successful; else zero UUID and false.
-func parseUuid(u string) (uuid.UUID, bool) {
-
-	if id, err := uuid.Parse(u); err != nil {
-		return uuid.UUID{}, false
-	} else {
-		return id, true
-	}
-}
-
-// redact a secret for log inclusion.
-func redact(secret string) string {
-
-	const (
-		minLen = 6
-		maxLen = 60
-	)
-
-	if secret == "" {
-		return ""
-	}
-
-	if _, ok := parseUuid(secret); ok {
-		return secret[:9] + "{REDACTED}" + secret[23:]
-	}
-
-	r := []rune(secret)
-	l := len(r)
-
-	if l < minLen {
-		return "{REDACTED}"
-	}
-
-	if l > maxLen {
-		// Big secrets, e.g. certs
-		return string(r[:20]) + "{REDACTED}" + string(r[(l-20):])
-	}
-
-	l /= 3
-	return string(r[:l]) + "{REDACTED}" + string(r[(l*2):])
 }

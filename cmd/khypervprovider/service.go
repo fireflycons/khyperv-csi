@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/fireflycons/hypervcsi/internal/common"
+	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/fireflycons/hypervcsi/internal/logging"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
 	"github.com/fireflycons/hypervcsi/internal/windows/controller"
@@ -93,7 +94,7 @@ func runService(name string, isDebug bool) {
 	if isDebug {
 		logger = logging.NewDebug()
 	} else {
-		logger = logging.New()
+		logger = logging.New(logrus.InfoLevel)
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -238,7 +239,7 @@ func apiKeyMiddleware(logger *logrus.Logger, apiKey string) gin.HandlerFunc {
 		}()
 
 		if needApiKey {
-			key := ctx.Request.Header.Get("X-Api-Key")
+			key := ctx.Request.Header.Get(constants.ApiKeyHeader)
 
 			if key == "" || !strings.EqualFold(key, apiKey) {
 				remoteAddr := func() string {

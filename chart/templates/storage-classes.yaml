@@ -19,7 +19,7 @@ metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
 provisioner: {{ .Values.driverName }}
-allowVolumeExpansion: false
+allowVolumeExpansion: true
 
 ---
 
@@ -31,7 +31,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 provisioner: {{ .Values.driverName }}
 reclaimPolicy: Retain
-allowVolumeExpansion: false
+allowVolumeExpansion: true
 
 ---
 
@@ -44,7 +44,7 @@ metadata:
 provisioner: {{ .Values.driverName }}
 parameters:
   fstype: xfs
-allowVolumeExpansion: false
+allowVolumeExpansion: true
 
 ---
 
@@ -58,4 +58,4 @@ provisioner: {{ .Values.driverName }}
 parameters:
   fstype: xfs
 reclaimPolicy: Retain
-allowVolumeExpansion: false
+allowVolumeExpansion: true
