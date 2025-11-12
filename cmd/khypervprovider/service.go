@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fireflycons/hypervcsi/internal/common"
 	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/fireflycons/hypervcsi/internal/logging"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
@@ -19,6 +18,7 @@ import (
 	"github.com/fireflycons/hypervcsi/internal/windows/messages"
 	"github.com/fireflycons/hypervcsi/internal/windows/swaggerui"
 	"github.com/gin-gonic/gin"
+	"github.com/julien040/go-ternary"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 
@@ -197,7 +197,7 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 			WithField("ssl", useSSL).
 			Info(messages.SERVER_STARTING)
 
-		err := common.Ternaryf(
+		err := ternary.Iff(
 			useSSL,
 			func() error {
 				return httpServer.ListenAndServeTLS(certFlag, keyFlag)

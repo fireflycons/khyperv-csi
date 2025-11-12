@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fireflycons/hypervcsi/internal/common"
+	"github.com/julien040/go-ternary"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +16,7 @@ func TestGetHostname(t *testing.T) {
 	computerName := os.Getenv("COMPUTERNAME")
 	domain := os.Getenv("USERDNSDOMAIN")
 
-	expectedFqdn := common.Ternary(
+	expectedFqdn := ternary.If(
 		domain != "",
 		strings.ToLower(computerName+"."+domain),
 		strings.ToLower(computerName),
