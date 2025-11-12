@@ -11,9 +11,13 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/fireflycons/hypervcsi/internal/common"
+	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -62,11 +66,12 @@ type client struct {
 	httpClient httpClient
 	addr       *url.URL
 	apiKey     string
+	logger     *logrus.Entry
 }
 
 var _ Client = (*client)(nil)
 
-func NewClient(baseURL string, httpClient httpClient, apiKey string) (*client, error) {
+func NewClient(baseURL string, httpClient httpClient, apiKey string, logger *logrus.Entry) (*client, error) {
 
 	parsedURL, err := url.Parse(baseURL)
 
@@ -78,6 +83,7 @@ func NewClient(baseURL string, httpClient httpClient, apiKey string) (*client, e
 		httpClient: httpClient,
 		addr:       parsedURL,
 		apiKey:     apiKey,
+		logger:     logger,
 	}, nil
 }
 
@@ -97,7 +103,7 @@ func (c client) CreateVolume(ctx context.Context, name string, sizeBytes int64) 
 		}.Encode(),
 	})
 
-	return apiCall[*rest.GetVolumeResponse](ctx, c, "create volume", target, "POST", c.apiKey)
+	return apiCall[*rest.GetVolumeResponse](ctx, c, "create volume", target, "POST")
 }
 
 // DeleteVolume deletes a VHD with the given ID
@@ -107,7 +113,7 @@ func (c client) DeleteVolume(ctx context.Context, volumeId string) error {
 		Path: "volume/" + volumeId,
 	})
 
-	_, err := apiCall[*noResult](ctx, c, "delete volume", target, "DELETE", c.apiKey)
+	_, err := apiCall[*noResult](ctx, c, "delete volume", target, "DELETE")
 	return err
 }
 
@@ -117,7 +123,7 @@ func (c client) GetVolume(ctx context.Context, volumeId string) (*rest.GetVolume
 		Path: "volume/" + volumeId,
 	})
 
-	return apiCall[*rest.GetVolumeResponse](ctx, c, "get volume", target, "GET", c.apiKey)
+	return apiCall[*rest.GetVolumeResponse](ctx, c, "get volume", target, "GET")
 }
 
 // ListVolumes returns a list of provisioned VHDs
@@ -135,7 +141,7 @@ func (c client) ListVolumes(ctx context.Context, maxEntries int, nextToken strin
 		}.Encode(),
 	})
 
-	return apiCall[*rest.ListVolumesResponse](ctx, c, "list volumes", target, "GET", c.apiKey)
+	return apiCall[*rest.ListVolumesResponse](ctx, c, "list volumes", target, "GET")
 }
 
 // GetCapacity returns the free space remaining for provisioning new VHDs
@@ -145,7 +151,7 @@ func (c client) GetCapacity(ctx context.Context) (*rest.GetCapacityResponse, err
 		Path: "capacity",
 	})
 
-	return apiCall[*rest.GetCapacityResponse](ctx, c, "get capacity", target, "GET", c.apiKey)
+	return apiCall[*rest.GetCapacityResponse](ctx, c, "get capacity", target, "GET")
 }
 
 // ListVms returns a list of all VMs defined in the Hyper-V server
@@ -155,7 +161,7 @@ func (c client) ListVms(ctx context.Context) (*rest.ListVMResponse, error) {
 		Path: "vms",
 	})
 
-	return apiCall[*rest.ListVMResponse](ctx, c, "list vms", target, "GET", c.apiKey)
+	return apiCall[*rest.ListVMResponse](ctx, c, "list vms", target, "GET")
 }
 
 // GetVm gets the VM with the given ID
@@ -168,7 +174,7 @@ func (c client) GetVm(ctx context.Context, nodeId string) (*rest.GetVMResponse, 
 		}.Encode(),
 	})
 
-	return apiCall[*rest.GetVMResponse](ctx, c, "get vm", target, "GET", c.apiKey)
+	return apiCall[*rest.GetVMResponse](ctx, c, "get vm", target, "GET")
 
 }
 
@@ -204,7 +210,7 @@ func (c client) ExpandVolume(ctx context.Context, volumeId string, sizeBytes int
 		}.Encode(),
 	})
 
-	return apiCall[*rest.ExpandVolumeResponse](ctx, c, "create volume", target, "PUT", c.apiKey)
+	return apiCall[*rest.ExpandVolumeResponse](ctx, c, "create volume", target, "PUT")
 }
 
 func (c client) HealthCheck(ctx context.Context) (*rest.HealthyResponse, error) {
@@ -213,7 +219,7 @@ func (c client) HealthCheck(ctx context.Context) (*rest.HealthyResponse, error) 
 		Path: "healthz",
 	})
 
-	return apiCall[*rest.HealthyResponse](ctx, c, "health check", target, "GET", c.apiKey)
+	return apiCall[*rest.HealthyResponse](ctx, c, "health check", target, "GET")
 }
 
 func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publishOp) error {
@@ -229,13 +235,13 @@ func (c client) publisher(ctx context.Context, volumeId, nodeId string, op publi
 		Path: "attachment/" + nodeId + "/volume/" + volumeId,
 	})
 
-	_, err := apiCall[*noResult](ctx, c, opName+" volume", target, method, c.apiKey)
+	_, err := apiCall[*noResult](ctx, c, opName+" volume", target, method)
 	return err
 }
 
 // apiCall prepares and executes an API call to the Hyper-V REST service.
 // It handles timeouts, request creation, and response parsing.
-func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, target *url.URL, method, apiKey string) (T, error) {
+func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, target *url.URL, method string) (T, error) {
 
 	var requestCtx = ctx
 
@@ -251,7 +257,14 @@ func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, targe
 		return nil, fmt.Errorf("%s: cannot create request: %w", operation, err)
 	}
 
-	request.Header.Set("x-api-key", apiKey)
+	request.Header.Set(constants.ApiKeyHeader, c.apiKey)
+
+	if c.logger != nil {
+		c.logger.WithFields(logrus.Fields{
+			"curl":      requestToCurl(request),
+			"operation": operation,
+		}).Debug("")
+	}
 
 	httpResponse, err := c.httpClient.Do(request)
 
@@ -293,4 +306,26 @@ func apiCall[T *Q, Q any](ctx context.Context, c client, operation string, targe
 	}
 
 	return apiResponse, nil
+}
+
+func requestToCurl(req *http.Request) string {
+
+	if req == nil {
+		return ""
+	}
+
+	apiKey := req.Header.Get(constants.ApiKeyHeader)
+
+	return fmt.Sprintf(
+		"curl -X %s -H '%s: %s' %s",
+		func() string {
+			if strings.TrimSpace(req.Method) == "" {
+				return "GET"
+			}
+			return strings.ToUpper(req.Method)
+		}(),
+		constants.ApiKeyHeader,
+		common.Redact(apiKey),
+		req.URL.String(),
+	)
 }

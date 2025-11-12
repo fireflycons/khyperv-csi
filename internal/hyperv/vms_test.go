@@ -35,7 +35,7 @@ func (s *ClientTestSuite) TestListVms() {
 		nil,
 	)
 
-	actual, err := apiCall[*rest.ListVMResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
+	actual, err := apiCall[*rest.ListVMResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET")
 
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)
@@ -63,7 +63,7 @@ func (s *ClientTestSuite) TestGetVms() {
 		nil,
 	)
 
-	actual, err := apiCall[*rest.GetVMResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
+	actual, err := apiCall[*rest.GetVMResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET")
 
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)
