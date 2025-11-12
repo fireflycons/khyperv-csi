@@ -31,6 +31,8 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
@@ -385,11 +387,14 @@ func (d *Driver) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 		return nil, status.Errorf(codes.Internal, "failed to retrieve capacity statistics for volume path %q: %s", volumePath, err)
 	}
 
+	// Print large numbers with comma separators
+	p := message.NewPrinter(language.English)
+
 	// only can retrieve total capacity for a block device
 	if isBlock {
 		log.WithFields(logrus.Fields{
 			"volume_mode": volumeModeBlock,
-			"bytes_total": stats.totalBytes,
+			"bytes_total": p.Sprintf("%d", stats.totalBytes),
 		}).Info("node capacity statistics retrieved")
 
 		return &csi.NodeGetVolumeStatsResponse{
@@ -404,12 +409,12 @@ func (d *Driver) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 
 	log.WithFields(logrus.Fields{
 		"volume_mode":      volumeModeFilesystem,
-		"bytes_available":  stats.availableBytes,
-		"bytes_total":      stats.totalBytes,
-		"bytes_used":       stats.usedBytes,
-		"inodes_available": stats.availableInodes,
-		"inodes_total":     stats.totalInodes,
-		"inodes_used":      stats.usedInodes,
+		"bytes_available":  p.Sprintf("%d", stats.availableBytes),
+		"bytes_total":      p.Sprintf("%d", stats.totalBytes),
+		"bytes_used":       p.Sprintf("%d", stats.usedBytes),
+		"inodes_available": p.Sprintf("%d", stats.availableInodes),
+		"inodes_total":     p.Sprintf("%d", stats.totalInodes),
+		"inodes_used":      p.Sprintf("%d", stats.usedInodes),
 	}).Info("node capacity statistics retrieved")
 
 	return &csi.NodeGetVolumeStatsResponse{

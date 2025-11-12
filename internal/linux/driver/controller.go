@@ -34,6 +34,8 @@ import (
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
@@ -78,7 +80,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	log := d.log.WithFields(logrus.Fields{
 		"volume_name":         volumeName,
-		"storage_size_gb":     size / constants.GiB,
+		"storage_size":        common.FormatBytes(size),
 		"method":              "create_volume",
 		"volume_capabilities": req.VolumeCapabilities,
 	})
@@ -210,8 +212,9 @@ func (d *Driver) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 	}
 
 	log := d.log.WithFields(logrus.Fields{
-		"volume_id": req.VolumeId,
-		"method":    "controller_expand_volume",
+		"volume_id":       req.VolumeId,
+		"method":          "controller_expand_volume",
+		"initial-request": common.FormatBytes(req.CapacityRange.RequiredBytes),
 	})
 
 	log.Info("controller expand volume called")
@@ -222,18 +225,17 @@ func (d *Driver) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 		return nil, processErrorReturn(err, log, "controller_expand_volume - volume does not exist")
 	}
 
-	resizeBytes, err := d.extractStorage(req.GetCapacityRange())
+	resizeBytes, err := d.extractStorage(req.CapacityRange)
 	if err != nil {
 		return nil, status.Errorf(codes.OutOfRange, "ControllerExpandVolume invalid capacity range: %v", err)
 	}
 
 	if vol.Size >= resizeBytes {
 		log.WithFields(logrus.Fields{
-			"current_volume_size":   vol.Size,
-			"requested_volume_size": resizeBytes,
+			"current_volume_size":   common.FormatBytes(vol.Size),
+			"requested_volume_size": common.FormatBytes(resizeBytes),
 		}).Info("skipping volume resize because current volume size exceeds requested volume size")
-		// even if the volume is resized independently from the control panel, we still need to resize the node fs when resize is requested
-		// in this case, the claim capacity will be resized to the volume capacity, requested capcity will be ignored to make the PV and PVC capacities consistent
+
 		return &csi.ControllerExpandVolumeResponse{CapacityBytes: vol.Size, NodeExpansionRequired: true}, nil
 	}
 
@@ -242,7 +244,7 @@ func (d *Driver) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 		return nil, processErrorReturn(err, log, "controller_expand_volume - expand vaolume failed")
 	}
 
-	log = log.WithField("new_volume_size", resp.CapacityBytes)
+	log = log.WithField("new_volume_size", common.FormatBytes(resp.CapacityBytes))
 	log.Info("volume was resized")
 
 	nodeExpansionRequired := true
@@ -351,7 +353,10 @@ func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (
 		return nil, processErrorReturn(err, log, "get capacity")
 	}
 
-	log.WithField("available_capacity_bytes", capResp.AvailableCapacity).Info("capacity retrieved")
+	// Print large numbers with comma separators
+	p := message.NewPrinter(language.English)
+
+	log.WithField("available_capacity_bytes", p.Sprintf("%d", capResp.AvailableCapacity)).Info("capacity retrieved")
 
 	return &csi.GetCapacityResponse{
 		AvailableCapacity: capResp.AvailableCapacity,
