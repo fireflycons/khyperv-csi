@@ -3,6 +3,7 @@
 package controller
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/fireflycons/hypervcsi/internal/constants"
@@ -18,11 +19,11 @@ func (s *ControllerTestSuite) TestCreate() {
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "constants.ZeroUUID"
+		diskId = constants.ZeroUUID
 	)
 
 	newVhdResponse := &models.GetVHDResponse{
-		Path:           "C:\\Temp\\pv1;constants.ZeroUUID.vhdx",
+		Path:           fmt.Sprintf("C:\\Temp\\pv1;%s.vhdx", constants.ZeroUUID),
 		Name:           "pv1",
 		Size:           size,
 		DiskIdentifier: diskId,
@@ -48,11 +49,11 @@ func (s *ControllerTestSuite) TestCreateUnderMinSize() {
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "constants.ZeroUUID"
+		diskId = constants.ZeroUUID
 	)
 
 	newVhdResponse := &models.GetVHDResponse{
-		Path:           "C:\\Temp\\pv1;constants.ZeroUUID.vhdx",
+		Path:           fmt.Sprintf("C:\\Temp\\pv1;%s.vhdx", constants.ZeroUUID),
 		Name:           "pv1",
 		Size:           constants.MinimumVolumeSizeInBytes,
 		DiskIdentifier: diskId,
@@ -78,11 +79,11 @@ func (s *ControllerTestSuite) TestCreateIdempotent() {
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "constants.ZeroUUID"
+		diskId = constants.ZeroUUID
 	)
 
-	exitingVhdResponse := &models.GetVHDResponse{
-		Path:           "C:\\Temp\\pv1;constants.ZeroUUID.vhdx",
+	existingVhdResponse := &models.GetVHDResponse{
+		Path:           fmt.Sprintf("C:\\Temp\\pv1;%s.vhdx", constants.ZeroUUID),
 		Name:           "pv1",
 		Size:           size,
 		DiskIdentifier: diskId,
@@ -94,7 +95,7 @@ func (s *ControllerTestSuite) TestCreateIdempotent() {
 		Name: "pv1",
 	}
 
-	s.shell.EXPECT().Execute(mock.Anything).Return(s.JSON(exitingVhdResponse), "", nil).Once()
+	s.shell.EXPECT().Execute(mock.Anything).Return(s.JSON(existingVhdResponse), "", nil).Once()
 
 	actual, err := s.server.CreateVolume("pv1", size)
 
@@ -107,7 +108,7 @@ func (s *ControllerTestSuite) TestCreateResourceExhausted() {
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "constants.ZeroUUID"
+		diskId = constants.ZeroUUID
 	)
 
 	s.shell.EXPECT().Execute(mock.Anything).Return("", "NOT_FOUND : ", os.ErrNotExist).Once()
@@ -126,11 +127,11 @@ func (s *ControllerTestSuite) TestCreateWithDifferentSizeWhenDiskExistsIsError()
 
 	const (
 		size   = 10 * constants.MiB
-		diskId = "constants.ZeroUUID"
+		diskId = constants.ZeroUUID
 	)
 
 	exitingVhdResponse := &models.GetVHDResponse{
-		Path:           "C:\\Temp\\pv1;constants.ZeroUUID.vhdx",
+		Path:           fmt.Sprintf("C:\\Temp\\pv1;%s.vhdx", constants.ZeroUUID),
 		Name:           "pv1",
 		Size:           size * 2,
 		DiskIdentifier: diskId,

@@ -31,6 +31,8 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
@@ -311,14 +313,13 @@ func (d *Driver) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabi
 				},
 			},
 		},
-		// TODO - Expand Volume support
-		// {
-		// 	Type: &csi.NodeServiceCapability_Rpc{
-		// 		Rpc: &csi.NodeServiceCapability_RPC{
-		// 			Type: csi.NodeServiceCapability_RPC_EXPAND_VOLUME,
-		// 		},
-		// 	},
-		// },
+		{
+			Type: &csi.NodeServiceCapability_Rpc{
+				Rpc: &csi.NodeServiceCapability_RPC{
+					Type: csi.NodeServiceCapability_RPC_EXPAND_VOLUME,
+				},
+			},
+		},
 		{
 			Type: &csi.NodeServiceCapability_Rpc{
 				Rpc: &csi.NodeServiceCapability_RPC{
@@ -386,11 +387,14 @@ func (d *Driver) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 		return nil, status.Errorf(codes.Internal, "failed to retrieve capacity statistics for volume path %q: %s", volumePath, err)
 	}
 
+	// Print large numbers with comma separators
+	p := message.NewPrinter(language.English)
+
 	// only can retrieve total capacity for a block device
 	if isBlock {
 		log.WithFields(logrus.Fields{
 			"volume_mode": volumeModeBlock,
-			"bytes_total": stats.totalBytes,
+			"bytes_total": p.Sprintf("%d", stats.totalBytes),
 		}).Info("node capacity statistics retrieved")
 
 		return &csi.NodeGetVolumeStatsResponse{
@@ -405,12 +409,12 @@ func (d *Driver) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 
 	log.WithFields(logrus.Fields{
 		"volume_mode":      volumeModeFilesystem,
-		"bytes_available":  stats.availableBytes,
-		"bytes_total":      stats.totalBytes,
-		"bytes_used":       stats.usedBytes,
-		"inodes_available": stats.availableInodes,
-		"inodes_total":     stats.totalInodes,
-		"inodes_used":      stats.usedInodes,
+		"bytes_available":  p.Sprintf("%d", stats.availableBytes),
+		"bytes_total":      p.Sprintf("%d", stats.totalBytes),
+		"bytes_used":       p.Sprintf("%d", stats.usedBytes),
+		"inodes_available": p.Sprintf("%d", stats.availableInodes),
+		"inodes_total":     p.Sprintf("%d", stats.totalInodes),
+		"inodes_used":      p.Sprintf("%d", stats.usedInodes),
 	}).Info("node capacity statistics retrieved")
 
 	return &csi.NodeGetVolumeStatsResponse{
@@ -429,6 +433,66 @@ func (d *Driver) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeS
 			},
 		},
 	}, nil
+}
+
+func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
+
+	volumeID := req.GetVolumeId()
+	if volumeID == "" {
+		return nil, status.Error(codes.InvalidArgument, "NodeExpandVolume volume ID not provided")
+	}
+
+	volumePath := req.GetVolumePath()
+	if volumePath == "" {
+		return nil, status.Error(codes.InvalidArgument, "NodeExpandVolume volume path not provided")
+	}
+
+	log := d.log.WithFields(logrus.Fields{
+		"volume_id":   req.VolumeId,
+		"volume_path": req.VolumePath,
+		"method":      "node_expand_volume",
+	})
+	log.Info("node expand volume called")
+
+	if req.GetVolumeCapability() != nil {
+		//nolint:gocritic // May be more cases in future
+		switch req.GetVolumeCapability().GetAccessType().(type) {
+		case *csi.VolumeCapability_Block:
+			log.Info("filesystem expansion is skipped for block volumes")
+			return &csi.NodeExpandVolumeResponse{}, nil
+		}
+	}
+
+	mounted, err := d.mounter.IsMounted(volumePath)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "NodeExpandVolume failed to check if volume path %q is mounted: %s", volumePath, err)
+	}
+
+	if !mounted {
+		return nil, status.Errorf(codes.NotFound, "NodeExpandVolume volume path %q is not mounted", volumePath)
+	}
+
+	mounter := mountutil.New("")
+	devicePath, err := d.mounter.GetDeviceName(mounter, volumePath)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "NodeExpandVolume unable to get device path for %q: %v", volumePath, err)
+	}
+
+	if devicePath == "" {
+		return nil, status.Errorf(codes.NotFound, "NodeExpandVolume device path for volume path %q not found", volumePath)
+	}
+
+	r := mountutil.NewResizeFs(utilexec.New())
+	log = log.WithFields(logrus.Fields{
+		"device_path": devicePath,
+	})
+	log.Info("resizing volume")
+	if _, err := r.Resize(devicePath, volumePath); err != nil {
+		return nil, status.Errorf(codes.Internal, "NodeExpandVolume could not resize volume %q (%q):  %v", volumeID, req.GetVolumePath(), err)
+	}
+
+	log.Info("volume was resized")
+	return &csi.NodeExpandVolumeResponse{}, nil
 }
 
 func (d *Driver) nodePublishVolumeForFileSystem(req *csi.NodePublishVolumeRequest, mountOptions []string, log *logrus.Entry) error {

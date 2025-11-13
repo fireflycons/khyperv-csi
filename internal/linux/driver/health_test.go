@@ -30,7 +30,7 @@ func (s *driverTestSuite) TestHVHealthCheker_Check() {
 		}))
 		defer ts.Close()
 
-		client, err := hyperv.NewClient(ts.URL, &http.Client{}, "a-key")
+		client, err := hyperv.NewClient(ts.URL, &http.Client{}, "a-key", nil)
 		s.Require().NoError(err)
 
 		c.client = client
@@ -48,7 +48,7 @@ func (s *driverTestSuite) TestHVHealthCheker_Check() {
 		}))
 		defer ts.Close()
 
-		client, err := hyperv.NewClient(ts.URL, &http.Client{}, "a-key")
+		client, err := hyperv.NewClient(ts.URL, &http.Client{}, "a-key", nil)
 		s.Require().NoError(err)
 
 		c.client = client

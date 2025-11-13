@@ -60,7 +60,6 @@ func (h *WinEventLogHook) Fire(e *logrus.Entry) error {
 		return err
 	}
 
-	// TODO Assign message numbers
 	switch e.Level {
 	case logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel:
 		return h.log.Error(1, msg)

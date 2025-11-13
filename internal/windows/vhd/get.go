@@ -17,6 +17,7 @@ func GetByName(runner powershell.Runner, store, name string) (*models.GetVHDResp
 			map[string]any{
 				"PVStore": store,
 				"Name":    name,
+				"AsJson": nil,
 			},
 		),
 	)
@@ -34,6 +35,7 @@ func GetByID(runner powershell.Runner, store, id string) (*models.GetVHDResponse
 			map[string]any{
 				"PVStore": store,
 				"Id":      id,
+				"AsJson": nil,
 			},
 		),
 	)
@@ -49,6 +51,7 @@ func GetByPath(runner powershell.Runner, fullPath string) (*models.GetVHDRespons
 			map[string]any{
 				"PVStore": "",
 				"Path":    fullPath,
+				"AsJson": nil,
 			},
 		),
 	)

@@ -67,7 +67,7 @@ function New-Disk {
     $consumedSize = Invoke-Command -ScriptBlock {
         if ((Get-Item -Path $PVStore).PSDrive.Name -eq 'C') {
             # If C drive, leave 5GB free
-            $Size + 5GB
+            $Size + $script:MinFreeSpace
         } else {
             # Add a meg to allow for bock sizing etc
             $Size + 1MB

@@ -29,6 +29,9 @@ spec:
           args :
             - "--endpoint=unix:///csi/csi.sock"
             - "--url={{ .Values.controller.serviceUrl }}"
+          env:
+            - name: LOG_LEVEL
+              value: "{{ .Values.controller.loglevel }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             privileged: true

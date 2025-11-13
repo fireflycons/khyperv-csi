@@ -34,6 +34,8 @@ import (
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
@@ -78,7 +80,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	log := d.log.WithFields(logrus.Fields{
 		"volume_name":         volumeName,
-		"storage_size_gb":     size / constants.GiB,
+		"storage_size":        common.FormatBytes(size),
 		"method":              "create_volume",
 		"volume_capabilities": req.VolumeCapabilities,
 	})
@@ -203,6 +205,59 @@ func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.Control
 	return &csi.ControllerUnpublishVolumeResponse{}, nil
 }
 
+func (d *Driver) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+
+	if err := validateIds("ControllerExpandVolume", volumeIdentifier(req.VolumeId)); err != nil {
+		return nil, err
+	}
+
+	log := d.log.WithFields(logrus.Fields{
+		"volume_id":       req.VolumeId,
+		"method":          "controller_expand_volume",
+		"initial-request": common.FormatBytes(req.CapacityRange.RequiredBytes),
+	})
+
+	log.Info("controller expand volume called")
+
+	// Verify the volume exists
+	vol, err := d.hypervClient.GetVolume(ctx, req.VolumeId)
+	if err != nil {
+		return nil, processErrorReturn(err, log, "controller_expand_volume - volume does not exist")
+	}
+
+	resizeBytes, err := d.extractStorage(req.CapacityRange)
+	if err != nil {
+		return nil, status.Errorf(codes.OutOfRange, "ControllerExpandVolume invalid capacity range: %v", err)
+	}
+
+	if vol.Size >= resizeBytes {
+		log.WithFields(logrus.Fields{
+			"current_volume_size":   common.FormatBytes(vol.Size),
+			"requested_volume_size": common.FormatBytes(resizeBytes),
+		}).Info("skipping volume resize because current volume size exceeds requested volume size")
+
+		return &csi.ControllerExpandVolumeResponse{CapacityBytes: vol.Size, NodeExpansionRequired: true}, nil
+	}
+
+	resp, err := d.hypervClient.ExpandVolume(ctx, req.VolumeId, resizeBytes)
+	if err != nil {
+		return nil, processErrorReturn(err, log, "controller_expand_volume - expand vaolume failed")
+	}
+
+	log = log.WithField("new_volume_size", common.FormatBytes(resp.CapacityBytes))
+	log.Info("volume was resized")
+
+	nodeExpansionRequired := true
+	if req.GetVolumeCapability() != nil {
+		if _, ok := req.GetVolumeCapability().GetAccessType().(*csi.VolumeCapability_Block); ok {
+			log.Info("node expansion is not required for block volumes")
+			nodeExpansionRequired = false
+		}
+	}
+
+	return &csi.ControllerExpandVolumeResponse{CapacityBytes: resp.CapacityBytes, NodeExpansionRequired: nodeExpansionRequired}, nil
+}
+
 // ValidateVolumeCapabilities checks whether the volume capabilities requested are supported.
 func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 
@@ -298,7 +353,10 @@ func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (
 		return nil, processErrorReturn(err, log, "get capacity")
 	}
 
-	log.WithField("available_capacity_bytes", capResp.AvailableCapacity).Info("capacity retrieved")
+	// Print large numbers with comma separators
+	p := message.NewPrinter(language.English)
+
+	log.WithField("available_capacity_bytes", p.Sprintf("%d", capResp.AvailableCapacity)).Info("capacity retrieved")
 
 	return &csi.GetCapacityResponse{
 		AvailableCapacity: capResp.AvailableCapacity,
@@ -331,7 +389,7 @@ func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.Control
 		csi.ControllerServiceCapability_RPC_LIST_VOLUMES,
 		// csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 		// csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
-		// csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
+		csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
 		csi.ControllerServiceCapability_RPC_LIST_VOLUMES_PUBLISHED_NODES,
 	} {
 		caps = append(caps, newCap(cap))

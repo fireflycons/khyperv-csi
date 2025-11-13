@@ -35,7 +35,7 @@ func (s *ClientTestSuite) TestExecute() {
 		nil,
 	)
 
-	actual, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
+	actual, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET")
 
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)
@@ -55,7 +55,7 @@ func (s *ClientTestSuite) TestExecuteNoResult() {
 		nil,
 	)
 
-	actual, err := apiCall[*noResult](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
+	actual, err := apiCall[*noResult](context.Background(), s.client, "test", s.mustRequestURL(), "GET")
 
 	s.Require().NoError(err)
 	s.Require().Equal(expected, actual)
@@ -75,7 +75,7 @@ func (s *ClientTestSuite) TestExecuteFailOnDo() {
 
 	s.mockHttp.EXPECT().Do(mock.Anything).Return(nil, expected)
 
-	_, actual := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", req, "GET", "key")
+	_, actual := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", req, "GET")
 	s.Require().Error(actual)
 	s.Require().Contains(actual.Error(), "error making request")
 	urlErr := &url.Error{}
@@ -102,7 +102,7 @@ func (s *ClientTestSuite) TestExecuteFailOnStatus() {
 		nil,
 	)
 
-	_, actual := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
+	_, actual := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET")
 
 	s.Require().Error(actual)
 	restErr := &rest.Error{}
@@ -122,7 +122,7 @@ func (s *ClientTestSuite) TestExecuteFailUnmarshallingResponse() {
 		nil,
 	)
 
-	_, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
+	_, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET")
 
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "error unmarshaling response data")
@@ -140,7 +140,7 @@ func (s *ClientTestSuite) TestExecuteFailUnmashallingError() {
 		nil,
 	)
 
-	_, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
+	_, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET")
 
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "error unmarshaling error response")
@@ -156,7 +156,7 @@ func (s *ClientTestSuite) TestExecuteFailOnTimeout() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 	defer cancel()
 
-	_, err := apiCall[*rest.GetVolumeResponse](ctx, s.client, "test", s.mustRequestURL(), "GET", "key")
+	_, err := apiCall[*rest.GetVolumeResponse](ctx, s.client, "test", s.mustRequestURL(), "GET")
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "error making request: context deadline exceeded")
 }
@@ -183,7 +183,7 @@ func (s *ClientTestSuite) TestExecuteFailReadResponseBody() {
 		nil,
 	)
 
-	_, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET", "key")
+	_, err := apiCall[*rest.GetVolumeResponse](context.Background(), s.client, "test", s.mustRequestURL(), "GET")
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, errRead)
 	s.Require().Contains(err.Error(), "error reading result")

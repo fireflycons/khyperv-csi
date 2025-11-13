@@ -1,11 +1,11 @@
 //go:build windows
+
 //go:generate go run embed-gen.go
 
 package psmodule
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 )
 
@@ -19,7 +19,7 @@ func InstallModule() error {
 
 	defer extracted.cleanup()
 
-	log.Printf("Installing PowerShell module %s...", filepath.Base(extracted.packageFile))
+	InstallLog.Printf("Installing PowerShell module %s...", filepath.Base(extracted.packageFile))
 
 	if err := runPowershell(extracted.installScript, "-Package", extracted.packageFile); err != nil {
 		return fmt.Errorf("install-module: Error installing PowerShell module: %v", err.Error())

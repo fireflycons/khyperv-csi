@@ -11,13 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fireflycons/hypervcsi/internal/common"
+	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/fireflycons/hypervcsi/internal/logging"
 	"github.com/fireflycons/hypervcsi/internal/models/rest"
 	"github.com/fireflycons/hypervcsi/internal/windows/controller"
 	"github.com/fireflycons/hypervcsi/internal/windows/messages"
 	"github.com/fireflycons/hypervcsi/internal/windows/swaggerui"
 	"github.com/gin-gonic/gin"
+	"github.com/julien040/go-ternary"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 
@@ -93,7 +94,7 @@ func runService(name string, isDebug bool) {
 	if isDebug {
 		logger = logging.NewDebug()
 	} else {
-		logger = logging.New()
+		logger = logging.New(logrus.InfoLevel)
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -162,11 +163,12 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	router.GET("/volume/:name", s.controller.HandleGetVolume)
-	router.POST("/volume/:name", s.controller.HandleCreateVolume)
+	router.POST("/volume/:name/size/:size", s.controller.HandleCreateVolume)
 	router.DELETE("/volume/:id", s.controller.HandleDeleteVolume)
+	router.PUT("/volume/:id/size/:size", s.controller.HandleExpandVolume)
 	router.GET("/volumes", s.controller.HandleListVolumes)
 	router.GET("/capacity", s.controller.HandleGetCapacity)
-	router.POST("/attachment/:nodeid/volume/:volid", s.controller.HandlePublishVolume)
+	router.PUT("/attachment/:nodeid/volume/:volid", s.controller.HandlePublishVolume)
 	router.DELETE("/attachment/:nodeid/volume/:volid", s.controller.HandleUnpublishVolume)
 	router.GET("/healthz", s.controller.HandleHealthCheck)
 	router.GET("/vms", s.controller.HandleListVMs)
@@ -195,7 +197,7 @@ func (s *hyperVService) runServer(changes chan<- svc.Status, cancel context.Canc
 			WithField("ssl", useSSL).
 			Info(messages.SERVER_STARTING)
 
-		err := common.Ternaryf(
+		err := ternary.Iff(
 			useSSL,
 			func() error {
 				return httpServer.ListenAndServeTLS(certFlag, keyFlag)
@@ -237,7 +239,7 @@ func apiKeyMiddleware(logger *logrus.Logger, apiKey string) gin.HandlerFunc {
 		}()
 
 		if needApiKey {
-			key := ctx.Request.Header.Get("X-Api-Key")
+			key := ctx.Request.Header.Get(constants.ApiKeyHeader)
 
 			if key == "" || !strings.EqualFold(key, apiKey) {
 				remoteAddr := func() string {

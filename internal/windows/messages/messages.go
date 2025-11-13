@@ -48,4 +48,8 @@ const (
 	CONTROLLER_UNPUBLISH_VOLUME        = "unpublish volume called"
 	CONTROLLER_UNPUBLISH_VOLUME_FAILED = "unable to unmount volume"
 	CONTROLLER_VOLUME_UNPUBLISHED      = "volume was unmounted"
+
+	CONTROLLER_EXPAND_VOLUME        = "expand volume called"
+	CONTROLLER_EXPAND_VOLUME_FAILED = "unable to expand volume"
+	CONTROLLER_VOLUME_EXPANDED      = "volume waas expanded"
 )

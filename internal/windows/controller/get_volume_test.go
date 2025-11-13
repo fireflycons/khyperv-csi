@@ -5,6 +5,7 @@ package controller
 import (
 	"os"
 
+	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/fireflycons/hypervcsi/internal/models"
 	"github.com/fireflycons/hypervcsi/internal/windows/vhd"
 	"github.com/stretchr/testify/mock"
@@ -14,7 +15,7 @@ func (s *ControllerTestSuite) TestGetVolume() {
 
 	disk := models.GetVHDResponse{
 		Name:           "pv1",
-		DiskIdentifier: "constants.ZeroUUID",
+		DiskIdentifier: constants.ZeroUUID,
 	}
 
 	vols := &models.ListVHDResponse{

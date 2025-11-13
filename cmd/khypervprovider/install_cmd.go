@@ -104,7 +104,7 @@ func doInstall() error { //nolint:gocyclo // not worth splitting up
 		return err
 	}
 
-	log.Println("PowerShell module installed")
+	psmodule.InstallLog.Println("PowerShell module installed")
 
 	exepath := mustGetExePath()
 
@@ -125,7 +125,7 @@ func doInstall() error { //nolint:gocyclo // not worth splitting up
 
 	// Now do the SSL stuff, if requested.
 	if useSSL {
-		log.Println("Create self-signed certs:")
+		psmodule.InstallLog.Println("Create self-signed certs:")
 
 		//nolint:govet // intentional redeclaration of err
 		if err := setupCerts(filepath.Dir(exepath)); err != nil {
@@ -133,7 +133,7 @@ func doInstall() error { //nolint:gocyclo // not worth splitting up
 		}
 	}
 
-	log.Println("Installing Windows service")
+	psmodule.InstallLog.Println("Installing Windows service")
 
 	//nolint:govet // intentional redeclaration of err
 	if err := assertService(serviceControlManager, constants.ServiceName); err == nil {
@@ -200,14 +200,14 @@ func doInstall() error { //nolint:gocyclo // not worth splitting up
 		return fmt.Errorf("cannot set up event log: %w: service not installed", err)
 	}
 
-	log.Println("Service installed")
+	psmodule.InstallLog.Println("Service installed")
 
 	// Attempt to start the service
 	if err := startService(theService); err != nil {
 		return err
 	}
 
-	log.Printf(`Service Installed with the following configuration:
+	psmodule.InstallLog.Printf(`Service Installed with the following configuration:
 
 API Key         : %s
 Service Endpoint: %s
@@ -228,7 +228,7 @@ func startService(s *mgr.Service) error {
 		return fmt.Errorf("could not start service - check event log for details: %w", err)
 	}
 
-	log.Println("Service starting")
+	psmodule.InstallLog.Println("Service starting")
 
 	ctx, cancel := context.WithTimeout(context.Background(), maxServiceWaitTime)
 	defer cancel()
@@ -247,14 +247,14 @@ func startService(s *mgr.Service) error {
 			if !ok {
 				status = fmt.Sprintf("Unknown state %d", stat.State)
 			}
-			log.Printf("- service status: %s", status)
+			psmodule.InstallLog.Printf("- service status: %s", status)
 
 			if stat.State == svc.Stopped {
 				return errors.New("service stopped unexpectedly - check eventlog for errors")
 			}
 
 			if stat.State == svc.Running {
-				log.Println("Service running")
+				psmodule.InstallLog.Println("Service running")
 				return nil
 			}
 		}

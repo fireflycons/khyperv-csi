@@ -7,10 +7,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/fireflycons/hypervcsi/internal/linux/driver"
 	"github.com/fireflycons/hypervcsi/internal/linux/kvp"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +22,7 @@ var (
 	driverNameFlag string
 	debugAddrFlag  string
 	apiKeyFlag     string
+	logLevelFlag   uint32
 )
 
 var rootCmd = &cobra.Command{
@@ -40,17 +43,33 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&endpointFlag, "endpoint", "e", envOrDefault("ENDPOINT", "unix:///var/lib/kubelet/plugins/"+driver.DefaultDriverName+"/csi.sock"), "CSI endpoint")
+	rootCmd.Flags().StringVarP(&endpointFlag, "endpoint", "e", envOrDefaultString("ENDPOINT", "unix:///var/lib/kubelet/plugins/"+driver.DefaultDriverName+"/csi.sock"), "CSI endpoint")
 	rootCmd.Flags().StringVarP(&urlFlag, "url", "u", os.Getenv("URL"), "URL of khypervprovider Windows Service")
 	rootCmd.Flags().StringVarP(&driverNameFlag, "driver-name", "n", driver.DefaultDriverName, "Name for the driver")
 	rootCmd.Flags().StringVarP(&debugAddrFlag, "debug-addr", "d", "", "Address to serve the HTTP debug server on")
 	rootCmd.Flags().StringVarP(&apiKeyFlag, "api-key", "k", os.Getenv("API_KEY"), "API key to access Hyper-V service backend")
+	rootCmd.Flags().Uint32VarP(&logLevelFlag, "log-level", "v", envOrDefaultUint32("LOG_LEVEL", uint32(logrus.InfoLevel)), "Log level (higher = more verbose)")
 }
 
-func envOrDefault(varname, defaultValue string) string {
+func envOrDefaultString(varname, defaultValue string) string {
 
 	if v, present := os.LookupEnv(varname); present {
 		return v
+	}
+
+	return defaultValue
+}
+
+func envOrDefaultUint32(varname string, defaultValue uint32) uint32 {
+
+	if v, present := os.LookupEnv(varname); present {
+		i, err := strconv.ParseUint(v, 10, 3)
+
+		if err != nil {
+			return defaultValue
+		}
+
+		return uint32(i)
 	}
 
 	return defaultValue
@@ -66,6 +85,12 @@ func runDriver(*cobra.Command, []string) {
 			DebugAddr:  debugAddrFlag,
 			Metadata:   kvp.New(),
 			ApiKey:     apiKeyFlag,
+			LogLevel: func() logrus.Level {
+				if logLevelFlag > uint32(logrus.TraceLevel) {
+					return logrus.TraceLevel
+				}
+				return logrus.Level(logLevelFlag)
+			}(),
 		},
 	)
 

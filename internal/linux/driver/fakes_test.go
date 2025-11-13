@@ -188,6 +188,22 @@ func (f *fakeClient) UnpublishVolume(ctx context.Context, volumeId, nodeId strin
 	return nil
 }
 
+func (f *fakeClient) ExpandVolume(ctx context.Context, volumeId string, size int64) (*rest.ExpandVolumeResponse, error) {
+
+	if v, ok := f.volumes[volumeId]; ok {
+
+		return &rest.ExpandVolumeResponse{
+			CapacityBytes:         size,
+			NodeExpansionRequired: v.Size < size,
+		}, nil
+	}
+
+	return nil, &rest.Error{
+		Code:    codes.NotFound,
+		Message: "The disk is not found",
+	}
+}
+
 func (f *fakeClient) GetVm(_ context.Context, nodeId string) (*rest.GetVMResponse, error) {
 
 	for _, n := range f.nodes {

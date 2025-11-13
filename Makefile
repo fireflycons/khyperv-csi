@@ -1,4 +1,4 @@
-VERSION ?= 0.0.1
+VERSION ?= 0.1.0
 export
 
 ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...

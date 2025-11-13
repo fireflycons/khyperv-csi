@@ -24,6 +24,8 @@ type extractedFiles struct {
 	cleanup       func()
 }
 
+var InstallLog = log.New(os.Stdout, "", log.LstdFlags)
+
 func extractEmbeddedFiles() (*extractedFiles, error) {
 
 	extractDir := uuid.NewString()
@@ -63,7 +65,7 @@ func extractPackage(extractDir string) (packageToInstall, installScript string, 
 
 	for _, f := range files {
 
-		log.Printf("Extracting %s", f.Name())
+		InstallLog.Printf("Extracting %s", f.Name())
 		data, err := moduleFiles.ReadFile(f.Name())
 
 		if err != nil {
