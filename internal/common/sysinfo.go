@@ -16,6 +16,7 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
+	"golang.org/x/mod/semver"
 )
 
 // LatestRelease holds minimal release info from GitHub API.
@@ -291,7 +292,7 @@ func (r SystemReport) String() string {
 	}
 
 	outdated := func() string {
-		if latestVersion != r.Application.Version {
+		if semver.Compare(latestVersion, r.Application.Version) > 0 {
 			return " (newer version available)"
 		}
 		return ""
