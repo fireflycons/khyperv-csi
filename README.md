@@ -76,6 +76,8 @@ When the installation completes it will print the API key and the URL of the RES
 
 You can verify the operation of the service by browsing its Swagger UI. Take the endpoint URL printed by the installation and paste to your browser.
 
+See also [full command line documentation](./docs/khypervprovider.exe/).
+
 ### 2. Install the CSI Driver Plugin
 
 1. On a machine that has Helm and kubectl present, download and untar the helm chart.
