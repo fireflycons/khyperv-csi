@@ -57,5 +57,5 @@ func genDoc(cmd *cobra.Command, _ []string) {
 
 func defaultDirectory() string {
 
-	return filepath.Join("./docs", filepath.Base(os.Args[0]))
+	return filepath.Join("docs", filepath.Base(os.Args[0]))
 }
