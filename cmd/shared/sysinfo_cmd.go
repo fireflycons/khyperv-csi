@@ -30,13 +30,15 @@ func longDescription() string {
 
 Retrieve the output from within the pod to properly capture the execution environment:
 
-` + "```\nkubectl exec csi-hv-controller-0 -- hyperv-csi-plugin sysinfo\n```" + `
+` + "```\nkubectl exec csi-hv-controller-0 -- hyperv-csi-plugin sysinfo\n```\n"
+
+	}
+
+	desc += `
 
 If the output indicates a newer version is available, check the release notes on github
 as your issue may already be addressed.
 `
-
-	}
 
 	return desc
 }
