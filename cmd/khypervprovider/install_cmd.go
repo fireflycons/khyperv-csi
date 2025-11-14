@@ -23,10 +23,12 @@ import (
 )
 
 var (
-	sslFlag         bool
-	certFlag        string
-	keyFlag         string
-	pvDirectoryFlag string
+	sslFlag                   bool
+	certFlag                  string
+	keyFlag                   string
+	pvDirectoryFlag           string
+	distinguishedNameCAFlag   string
+	distinguishedNameCertFlag string
 )
 
 var installCmd = &cobra.Command{
@@ -34,7 +36,7 @@ var installCmd = &cobra.Command{
 	Short: "Installs this application as a Windows service",
 	Long: `
 You can serve via HTTPS by either
-* Generating self signed certs with --ssl
+* Generating self signed certs with --ssl and related flags
 * Providing a pre-created cert with --cert and --key
 
 If you generate them here, all the cert files will be stored in the same
@@ -54,12 +56,16 @@ func init() {
 
 	installCmd.Flags().Uint32VarP(&portFlag, "port", "p", constants.DefaultServicePort, "Port service will listen on")
 	installCmd.Flags().BoolVarP(&sslFlag, "ssl", "s", false, "Generate self-signed CA and server certificates to use with service")
-	installCmd.Flags().StringVarP(&certFlag, "cert", "c", "", "Certificate to use for HTTPS serving")
-	installCmd.Flags().StringVarP(&keyFlag, "key", "k", "", "Key associated with the certificate")
+	installCmd.Flags().StringVar(&distinguishedNameCAFlag, "ca-name", autoDistinguishedName("Example Root CA", "Example CA Org", countryCode), "Distinguished name in RFC4514 format for generated self-signed CA certificate.")
+	installCmd.Flags().StringVar(&distinguishedNameCertFlag, "cert-name", autoDistinguishedName(serverFqdn, constants.ServiceName, countryCode), "Distinguished name in RFC4514 format for generated server certificate.")
+	installCmd.Flags().StringVarP(&certFlag, "cert", "c", "", "Provided certificate to use for HTTPS serving")
+	installCmd.Flags().StringVarP(&keyFlag, "key", "k", "", "Key associated with the provided certificate")
 	installCmd.Flags().StringVarP(&pvDirectoryFlag, "directory", "d", "", "Directory to store PV disks in. Omit to have the service choose.")
 
 	installCmd.MarkFlagsRequiredTogether("cert", "key")
 	installCmd.MarkFlagsMutuallyExclusive("ssl", "cert")
+	installCmd.MarkFlagsMutuallyExclusive("cert", "cert-name")
+	installCmd.MarkFlagsMutuallyExclusive("cert", "ca-name")
 
 	rootCmd.AddCommand(installCmd)
 }
@@ -266,7 +272,7 @@ func setupCerts(certsPath string) error {
 	switch {
 	case sslFlag:
 
-		if err := generateCertificates(certsPath, os.Stdin); err != nil {
+		if err := generateCertificates(certsPath); err != nil {
 			return fmt.Errorf("error generating certificates: %w", err)
 		}
 

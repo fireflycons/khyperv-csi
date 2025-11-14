@@ -6,7 +6,7 @@ Installs this application as a Windows service
 
 
 You can serve via HTTPS by either
-* Generating self signed certs with --ssl
+* Generating self signed certs with --ssl and related flags
 * Providing a pre-created cert with --cert and --key
 
 If you generate them here, all the cert files will be stored in the same
@@ -26,10 +26,12 @@ khypervprovider install [flags]
 ### Options
 
 ```
-  -c, --cert string        Certificate to use for HTTPS serving
+      --ca-name string     Distinguished name in RFC4514 format for generated self-signed CA certificate. (default "CN=Example Root CA,O=Example CA Org,C=GB")
+  -c, --cert string        Provided certificate to use for HTTPS serving
+      --cert-name string   Distinguished name in RFC4514 format for generated server certificate. (default "CN=d-3xs.fc.local,O=khypervprovider,C=GB")
   -d, --directory string   Directory to store PV disks in. Omit to have the service choose.
   -h, --help               help for install
-  -k, --key string         Key associated with the certificate
+  -k, --key string         Key associated with the provided certificate
   -p, --port uint32        Port service will listen on (default 8080)
   -s, --ssl                Generate self-signed CA and server certificates to use with service
 ```
