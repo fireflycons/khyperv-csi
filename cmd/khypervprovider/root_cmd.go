@@ -80,4 +80,5 @@ func init() {
 	rootCmd.Flags().StringVar(&pvDirectoryFlag, "directory", "", "Directory to store PV disks in. Omit to have the service choose.")
 
 	shared.InitDocCmd(rootCmd)
+	shared.InitSysinfoCmd(rootCmd)
 }

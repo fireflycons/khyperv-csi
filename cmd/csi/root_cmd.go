@@ -52,6 +52,7 @@ func init() {
 	rootCmd.Flags().Uint32VarP(&logLevelFlag, "log-level", "v", envOrDefaultUint32("LOG_LEVEL", uint32(logrus.InfoLevel)), "Log level (higher = more verbose)")
 
 	shared.InitDocCmd(rootCmd)
+	shared.InitSysinfoCmd(rootCmd)
 }
 
 func envOrDefaultString(varname, defaultValue string) string {
