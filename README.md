@@ -87,3 +87,5 @@ You can verify the operation of the service by browsing its Swagger UI. Take the
     | `.controller.caCert`     | Conditional | Path to CA cert in PEM format. Required if self-signed cert was created by service installer or the server certificate was issued by a CA not known to the worker nodes.      |
     | `.image.repository`      | No          | Default `fireflycons/hyperv-csi-plugin`                            |
     | `.image.tag`             | No          | Default `.Chart.appVersion`                                        |
+
+See also [full command line documentation](./docs/hyperv-csi-plugin/).
