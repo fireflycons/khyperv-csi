@@ -12,7 +12,7 @@ powershell-modules/publish/
 *.crt
 *.key
 /notes.md
-hyperv-csi-plugin
+/hyperv-csi-plugin
 *.tar.gz
 *.tgz
 *.zip

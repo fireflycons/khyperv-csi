@@ -27,7 +27,7 @@ else
 	BUILD_DATE = $(shell date -u)
 	MOCKERY = mockery
 	SWAGGER =
-	SOURCE_FILES = $(shell find ./cmd/csi ./internal/common ./internal/constants ./internal/linux ./internal/models -type f -name '*.go' -print )
+	SOURCE_FILES = $(shell find ./cmd/csi ./cmd/shared ./internal/common ./internal/constants ./internal/linux ./internal/models -type f -name '*.go' -print )
 	LOGGING_FILES = $(shell find ./internal/logging/ -type d -name wineventlog -prune -o -type f -name '*.go' -not -name 'win*.go' -print)
 	LINT_TARGETS =
 	TEST_TARGETS =

@@ -2,6 +2,7 @@ Write-Output ((
     Invoke-Command -ScriptBlock {
         Get-ChildItem -File -Path .\internal\windows -Recurse -Filter *.go
         Get-ChildItem -File -Path .\cmd\khypervprovider -Recurse -Filter *.go
+        Get-ChildItem -File -Path .\cmd\shared -Recurse -Filter *.go
         Get-ChildItem -File -Path .\internal\common -Recurse -Filter *.go
         Get-ChildItem -File -Path .\internal\models -Recurse -Filter *.go
         Get-ChildItem -File -Path .\internal\constants -Recurse -Filter *.go
