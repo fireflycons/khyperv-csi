@@ -7,7 +7,7 @@ COMMIT_MSG=$(git log -1 --pretty=%B)
 echo "Commit message: $COMMIT_MSG"
 
 # Check for NO-CI
-if echo "$COMMIT_MSG" | grep -q "NO-CI"; then
+if echo "$COMMIT_MSG" | grep -iq "NO[_-]CI"; then
     echo "NO-CI found in commit message. Skipping."
     echo "skip=true" >> $GITHUB_OUTPUT
     exit 0

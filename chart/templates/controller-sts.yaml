@@ -41,7 +41,7 @@ spec:
           args:
             - |
               echo "Installing custom CA certs...";
-              cp /usr/local/share/ca-certificates/custom/ca.crt /usr/local/share/ca-certificates/ca.crt;
+              cp /etc/hyperv-csi-plugin/ca.crt /usr/local/share/ca-certificates/ca.crt;
               update-ca-certificates;
               echo "Starting main app...";
               exec {{ .Values.controller.executable }}
@@ -68,8 +68,8 @@ spec:
               readOnly: true
 {{- if .Values.controller.caCert }}
             - name: ca-cert
-              mountPath: /usr/local/share/ca-certificates/custom
-              readOnly: true
+              mountPath: /etc/hyperv-csi-plugin
+              readOnly: false
 {{- end }}
         - name: csi-provisioner
           image: registry.k8s.io/sig-storage/csi-provisioner:{{ .Values.csiVersions.provisioner }}

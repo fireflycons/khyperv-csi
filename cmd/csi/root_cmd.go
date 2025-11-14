@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/fireflycons/hypervcsi/cmd/shared"
 	"github.com/fireflycons/hypervcsi/internal/linux/driver"
 	"github.com/fireflycons/hypervcsi/internal/linux/kvp"
 	"github.com/sirupsen/logrus"
@@ -49,6 +50,9 @@ func init() {
 	rootCmd.Flags().StringVarP(&debugAddrFlag, "debug-addr", "d", "", "Address to serve the HTTP debug server on")
 	rootCmd.Flags().StringVarP(&apiKeyFlag, "api-key", "k", os.Getenv("API_KEY"), "API key to access Hyper-V service backend")
 	rootCmd.Flags().Uint32VarP(&logLevelFlag, "log-level", "v", envOrDefaultUint32("LOG_LEVEL", uint32(logrus.InfoLevel)), "Log level (higher = more verbose)")
+
+	shared.InitDocCmd(rootCmd)
+	shared.InitSysinfoCmd(rootCmd)
 }
 
 func envOrDefaultString(varname, defaultValue string) string {

@@ -17,13 +17,16 @@ RELEASE_NAME=hyperv
 CA_ARG=""
 
 if [[ -n "$HV_CA" ]]; then
-    CA_ARG="--set-file controller.caCert=$CA_ARG"
+    CA_ARG="--set-file controller.caCert=$HV_CA"
 fi
 
 echo
 echo "image.tag=$VERSION"
 echo "controller.apiKey=$HV_APIKEY"
 echo "controller.serviceUrl=$HV_URL"
+if [[ -n "$HV_CA" ]]; then
+    echo "controller.caCert=$HV_CA"
+fi
 echo
 helm upgrade $RELEASE_NAME --install --create-namespace --namespace "$NS" $CA_ARG \
     --set image.tag=$VERSION \

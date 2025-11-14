@@ -29,6 +29,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/fireflycons/hypervcsi/cmd/shared"
 	"github.com/fireflycons/hypervcsi/internal/constants"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/windows/svc"
@@ -78,4 +79,6 @@ func init() {
 	rootCmd.Flags().StringVar(&keyFlag, "key", "", "Key to use for HTTPS serving")
 	rootCmd.Flags().StringVar(&pvDirectoryFlag, "directory", "", "Directory to store PV disks in. Omit to have the service choose.")
 
+	shared.InitDocCmd(rootCmd)
+	shared.InitSysinfoCmd(rootCmd)
 }
