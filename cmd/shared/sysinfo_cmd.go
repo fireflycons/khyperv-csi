@@ -30,8 +30,8 @@ func longDescription() string {
 
 Retrieve the output from within the pod to properly capture the execution environment:
 
-  kubectl exec csi-hv-controller-0 -- hyperv-csi-plugin gendoc
-`
+` + "```\nkubectl exec csi-hv-controller-0 -- hyperv-csi-plugin sysinfo\n```\n"
+
 	}
 
 	return desc
