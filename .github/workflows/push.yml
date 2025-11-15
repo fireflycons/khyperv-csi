@@ -66,7 +66,7 @@ jobs:
         run: go mod download
 
       - name: Test
-        run: zbuild/gh-run-test.ps1
+        run: zbuild/workflow/gh-run-test.ps1
         shell: powershell
 
   linux-csi-driver:

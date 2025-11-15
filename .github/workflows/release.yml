@@ -28,10 +28,8 @@ jobs:
         run: go mod download
 
       - name: Build
-        run: |
-          SET "VERSION=%GITHUB_REF_NAME:~1%"
-          make executable
-        shell: cmd
+        run: zbuild\workflow\gh-build-service.ps1
+        shell: powershell
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
