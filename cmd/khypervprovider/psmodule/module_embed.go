@@ -4,6 +4,6 @@ package psmodule
 
 import "embed"
 
-//go:embed khyperv-csi.0.0.1.nupkg
+//go:embed khyperv-csi.0.1.0.nupkg
 //go:embed install-module.ps1
 var moduleFiles embed.FS

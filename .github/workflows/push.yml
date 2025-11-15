@@ -66,8 +66,8 @@ jobs:
         run: go mod download
 
       - name: Test
-        run: make test
-        shell: cmd
+        run: zbuild/workflow/gh-run-test.ps1
+        shell: powershell
 
   linux-csi-driver:
     needs: lint
