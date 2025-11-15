@@ -19,8 +19,8 @@ try {
     $version = Get-Version
     $binTarget =  "khypervprovider.exe"
 
-    go build -o $binTarget -ldflags "-s -w -X $goMod/internal/common.Version=$version -X $goMod/internal/common.CommitHash=$commitHash -X '$goMod/internal/common.BuildDate=$buildDate'" $(MAIN_DIR) ./cmd/khypervprovider
-    Write-Output $binTarget >> $env:GITHUB_ENV
+    go build -o $binTarget -ldflags "-s -w -X $goMod/internal/common.Version=$version -X $goMod/internal/common.CommitHash=$commitHash -X '$goMod/internal/common.BuildDate=$buildDate'" ./cmd/khypervprovider
+    Write-Output "ARTIFACT=$binTarget" >> $env:GITHUB_ENV
 }
 finally {
     Pop-Location
