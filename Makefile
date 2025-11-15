@@ -10,9 +10,9 @@ ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
 	SWAGGER = swagger
 	SWAGDIR = internal/windows
 	SWAGGERFILES = $(SWAGDIR)/controller/routes.go internal/models/rest/*.go internal/models/get-vhd.go
-	SOURCE_FILES_RAW = $(shell $(POWERSHELL) -File zbuild/get-windowsdeps.ps1)
+	SOURCE_FILES_RAW = $(shell $(POWERSHELL) -File zbuild/make/get-windowsdeps.ps1)
 	SOURCE_FILES = $(shell echo | set /p="$(SOURCE_FILES_RAW)")
-	LOGGING_FILES_RAW = $(shell $(POWERSHELL) -File zbuild/get-loggingdeps.ps1)
+	LOGGING_FILES_RAW = $(shell $(POWERSHELL) -File zbuild/make/get-loggingdeps.ps1)
 	LOGGING_FILES = $(shell echo | set /p="$(LOGGING_FILES_RAW)")
 	LINT_TARGETS = powershell
 	MOCK_TARGETS = internal/windows/powershell/runner.go
@@ -177,7 +177,7 @@ install-csi: ## (Linux) Install CSI plugin locally to Kubernetes current context
 ifeq ($(detected_OS),Windows)
 	echo "install-csi: Nothing to do for Windows"
 else
-	zbuild/helm-install-local.sh
+	zbuild/make/helm-install-local.sh
 endif
 
 .PHONY: test
